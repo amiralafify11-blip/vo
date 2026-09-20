@@ -546,6 +546,81 @@
       </div>
     </div>
 
+    <!-- Settings & Customization Card -->
+    <div class="link-generator" style="margin-top: 24px; border-top: 4px solid var(--accent-purple);">
+      <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        ⚙️ تخصيص تفاصيل الاستبيان ومشاركة الواتساب
+      </h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+        عدّل اسم المتجر، الفرع، النصوص الترويجية، وعنوان ووصف الرابط الذي يظهر في معاينة الواتساب وشبكات التواصل.
+      </p>
+
+      <div class="link-form" id="settings-form">
+        <div>
+          <label>اسم المتجر (الرئيسي)</label>
+          <input type="text" id="setting-store-name" placeholder="مثال: أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
+        </div>
+        <div>
+          <label>اسم الفرع</label>
+          <input type="text" id="setting-branch-name" placeholder="مثال: فرع الشارقة 🇦🇪" oninput="updateWhatsAppPreview()">
+        </div>
+
+        <div class="full-width">
+          <label>عنوان الرابط في واتساب ووسائل التواصل (Title)</label>
+          <input type="text" id="setting-meta-title" placeholder="مثال: استبيان رضا العملاء - أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
+        </div>
+
+        <div class="full-width">
+          <label>وصف الرابط في واتساب (الرسالة الترويجية التي تظهر في معاينة الرابط عند إرساله للعميل)</label>
+          <textarea id="setting-meta-desc" rows="2" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.8); border: 1.5px solid rgba(0,0,0,0.08); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.9rem; color: var(--text-primary); outline: none; direction: rtl; transition: all 0.3s ease;" placeholder="اكتب النص الترويجي الذي يظهر في واتساب..." oninput="updateWhatsAppPreview()"></textarea>
+        </div>
+
+        <div class="full-width">
+          <label>نص الترحيب في أعلى صفحة الاستبيان</label>
+          <input type="text" id="setting-welcome-desc" placeholder="مثال: شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!">
+        </div>
+
+        <div>
+          <label>نسبة أو قيمة الخصم (في الكوبون)</label>
+          <input type="text" id="setting-discount-text" placeholder="مثال: خصم 20%">
+        </div>
+        <div>
+          <label>تفاصيل وشروط الكوبون</label>
+          <input type="text" id="setting-coupon-desc" placeholder="مثال: على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة">
+        </div>
+
+        <div class="full-width">
+          <label>رابط تقييم خرائط جوجل للمتجر</label>
+          <input type="url" id="setting-maps-url" placeholder="https://maps.app.goo.gl/..." style="direction: ltr; text-align: left;">
+        </div>
+
+        <!-- Live WhatsApp Preview Box -->
+        <div class="full-width" style="margin-top: 12px; background: #eef2f5; padding: 18px; border-radius: 12px; border: 1px solid #d1d7db;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #128c7e; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+            <span>💬</span> <span>معاينة مباشرة لشكل الرابط عند إرساله في واتساب:</span>
+          </div>
+          <div style="background: #ffffff; border-radius: 8px; border-left: 5px solid #25d366; padding: 12px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); max-width: 500px;">
+            <div id="preview-meta-title" style="font-weight: 700; font-size: 0.95rem; color: #111b21; margin-bottom: 5px;">
+              استبيان رضا العملاء - أمير العفيفي للهواتف
+            </div>
+            <div id="preview-meta-desc" style="font-size: 0.82rem; color: #667781; line-height: 1.4; margin-bottom: 8px;">
+              استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات
+            </div>
+            <div style="font-size: 0.75rem; color: #8696a0; display: flex; align-items: center; gap: 4px;">
+              🔗 <span>amiralafify-invoice.netlify.app</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="full-width" style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+          <button class="generate-btn" id="save-settings-btn" onclick="saveSettings()" style="background: var(--gradient-primary);">
+            💾 حفظ التعديلات
+          </button>
+          <span id="settings-save-status" style="font-size: 0.85rem; font-weight: 700; display: none;"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- Customer Links Table -->
     <div class="section-heading">🔗 روابط العملاء</div>
     <div class="links-table-wrapper" style="margin-bottom: 32px;">
@@ -894,7 +969,7 @@
             <td style="direction:ltr;text-align:right;">${escapeHtml(link.phone || '-')}</td>
             <td>${link.has_invoice ? '<span class="badge invoice">🧾 مرفقة</span>' : '<span style="color:var(--text-muted);">-</span>'}</td>
             <td>${link.is_completed ? '<span class="badge done">✅ مكتمل</span>' : '<span class="badge pending">⏳ بانتظار</span>'}</td>
-            <td style="font-size:0.78rem;color:var(--text-muted);">${new Date(link.created_at).toLocaleDateString('ar-AE')}</td>
+            <td style="font-size:0.78rem;color:var(--text-muted);">${formatDate(link.created_at)}</td>
             <td style="display: flex; gap: 6px;">
               <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;" onclick="navigator.clipboard.writeText('${url}');this.textContent='✅ تم';">📋 نسخ</button>
               <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#f43f5e;" onclick="deleteLink(${link.id})">🗑️ حذف</button>
@@ -976,6 +1051,16 @@
       return div.innerHTML;
     }
 
+    function formatDate(str) {
+      if (!str) return '-';
+      try {
+        const d = new Date(str.replace(' ', 'T'));
+        return isNaN(d) ? str : d.toLocaleDateString('ar-AE');
+      } catch (e) {
+        return str;
+      }
+    }
+
     function exportCSV() {
       if (surveyData.length === 0) {
         alert('لا توجد بيانات للتصدير');
@@ -1010,6 +1095,86 @@
     // Load all data on page load
     loadData();
     loadLinks();
+    loadSettingsAdmin();
+
+    // ========================================
+    // Settings & Customization Logic
+    // ========================================
+    function updateWhatsAppPreview() {
+      const title = document.getElementById('setting-meta-title').value.trim() || 'استبيان رضا العملاء - أمير العفيفي للهواتف';
+      const desc = document.getElementById('setting-meta-desc').value.trim() || 'استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات';
+      document.getElementById('preview-meta-title').textContent = title;
+      document.getElementById('preview-meta-desc').textContent = desc;
+    }
+
+    async function loadSettingsAdmin() {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (!data.success || !data.data) return;
+        const s = data.data;
+
+        document.getElementById('setting-store-name').value = s.store_name || '';
+        document.getElementById('setting-branch-name').value = s.branch_name || '';
+        document.getElementById('setting-meta-title').value = s.meta_title || '';
+        document.getElementById('setting-meta-desc').value = s.meta_desc || '';
+        document.getElementById('setting-welcome-desc').value = s.welcome_desc || '';
+        document.getElementById('setting-discount-text').value = s.discount_text || '';
+        document.getElementById('setting-coupon-desc').value = s.coupon_desc || '';
+        document.getElementById('setting-maps-url').value = s.maps_url || '';
+
+        updateWhatsAppPreview();
+      } catch (e) {
+        console.error('Error loading settings:', e);
+      }
+    }
+
+    async function saveSettings() {
+      const btn = document.getElementById('save-settings-btn');
+      const status = document.getElementById('settings-save-status');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري الحفظ...';
+      status.style.display = 'none';
+
+      const payload = {
+        store_name: document.getElementById('setting-store-name').value.trim(),
+        branch_name: document.getElementById('setting-branch-name').value.trim(),
+        meta_title: document.getElementById('setting-meta-title').value.trim(),
+        meta_desc: document.getElementById('setting-meta-desc').value.trim(),
+        welcome_desc: document.getElementById('setting-welcome-desc').value.trim(),
+        discount_text: document.getElementById('setting-discount-text').value.trim(),
+        coupon_desc: document.getElementById('setting-coupon-desc').value.trim(),
+        maps_url: document.getElementById('setting-maps-url').value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          status.style.display = 'inline';
+          status.style.color = '#10b981';
+          status.textContent = '✅ ' + (data.message || 'تم حفظ التعديلات بنجاح!');
+        } else {
+          status.style.display = 'inline';
+          status.style.color = '#ef4444';
+          status.textContent = '❌ ' + (data.message || 'حدث خطأ أثناء الحفظ');
+        }
+      } catch (e) {
+        status.style.display = 'inline';
+        status.style.color = '#ef4444';
+        status.textContent = '❌ تعذر الاتصال بالخادم لحفظ الإعدادات';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 حفظ التعديلات';
+        setTimeout(() => { status.style.display = 'none'; }, 4000);
+      }
+    }
 
     // Auto-refresh every 30 seconds
     setInterval(() => { loadData(); loadLinks(); }, 30000);

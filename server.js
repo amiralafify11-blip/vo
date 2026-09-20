@@ -77,6 +77,66 @@ try {
   // Column already exists, ignore
 }
 
+// Create settings table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  )
+`);
+
+const defaultSettings = {
+  store_name: 'أمير العفيفي للهواتف',
+  branch_name: 'فرع الشارقة 🇦🇪',
+  meta_title: 'استبيان رضا العملاء - أمير العفيفي للهواتف',
+  meta_desc: 'استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
+  welcome_desc: 'شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!',
+  discount_text: 'خصم 20%',
+  coupon_desc: 'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
+  maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6'
+};
+
+// ============================================
+// API: Get Settings
+// ============================================
+app.get('/api/settings', (req, res) => {
+  try {
+    const rows = db.prepare('SELECT key, value FROM settings').all();
+    const settings = { ...defaultSettings };
+    rows.forEach(r => {
+      settings[r.key] = r.value;
+    });
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإعدادات' });
+  }
+});
+
+// ============================================
+// API: Save Settings
+// ============================================
+app.post('/api/settings', (req, res) => {
+  try {
+    const data = req.body;
+    const stmt = db.prepare(`
+      INSERT INTO settings (key, value) VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `);
+    
+    for (const [key, val] of Object.entries(data)) {
+      if (typeof val === 'string') {
+        stmt.run(key, val);
+      }
+    }
+    
+    res.json({ success: true, message: 'تم حفظ الإعدادات بنجاح!' });
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حفظ الإعدادات' });
+  }
+});
+
 // ============================================
 // Multer-free file upload using raw body parsing
 // ============================================

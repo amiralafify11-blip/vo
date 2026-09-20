@@ -6,6 +6,7 @@
 let currentToken = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
   initForm();
   initStarRating();
   initProgressTracker();
@@ -13,6 +14,56 @@ document.addEventListener('DOMContentLoaded', () => {
   setMaxDate();
   checkForToken();
 });
+
+// ========================================
+// Dynamic Settings Loader
+// ========================================
+async function loadSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    const data = await res.json();
+    if (!data.success || !data.data) return;
+    const s = data.data;
+
+    if (s.meta_title) {
+      document.title = s.meta_title;
+      const ogTitle = document.getElementById('og-title');
+      if (ogTitle) ogTitle.setAttribute('content', s.meta_title);
+    }
+    if (s.meta_desc) {
+      const metaDesc = document.getElementById('meta-description');
+      if (metaDesc) metaDesc.setAttribute('content', s.meta_desc);
+      const ogDesc = document.getElementById('og-description');
+      if (ogDesc) ogDesc.setAttribute('content', s.meta_desc);
+    }
+    if (s.store_name) {
+      const el = document.getElementById('header-store-name');
+      if (el) el.textContent = s.store_name;
+    }
+    if (s.branch_name) {
+      const el = document.getElementById('header-branch-name');
+      if (el) el.textContent = s.branch_name;
+    }
+    if (s.welcome_desc) {
+      const el = document.getElementById('header-welcome-desc');
+      if (el) el.textContent = s.welcome_desc;
+    }
+    if (s.discount_text) {
+      const el = document.getElementById('coupon-discount-text');
+      if (el) el.textContent = s.discount_text;
+    }
+    if (s.coupon_desc) {
+      const el = document.getElementById('coupon-desc-text');
+      if (el) el.textContent = s.coupon_desc;
+    }
+    if (s.maps_url) {
+      const el = document.getElementById('maps-link');
+      if (el) el.href = s.maps_url;
+    }
+  } catch (e) {
+    console.error('Error loading settings:', e);
+  }
+}
 
 // ========================================
 // Token Detection & Link Info
