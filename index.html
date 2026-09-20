@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات">
+  <title>استبيان رضا العملاء - أمير العفيفي للهواتف</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Animated Background -->
+  <div class="bg-animation">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+  </div>
+
+  <!-- Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <div class="container">
+
+    <!-- Header -->
+    <header class="survey-header" id="survey-header">
+      <div class="logo-icon">📱</div>
+      <h1>أمير العفيفي للهواتف</h1>
+      <p style="font-weight: 700; color: var(--accent-purple); margin-top: 4px;">فرع الشارقة 🇦🇪</p>
+      <p style="margin-top: 8px;">شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!</p>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="progress-container" id="progress-container">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progress-label">0% مكتمل</span>
+        <span id="progress-step">الخطوة 1 من 6</span>
+      </div>
+    </div>
+
+    <!-- Survey Form -->
+    <form id="survey-form" novalidate>
+
+      <!-- Section 1: Personal Info -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="icon purple">👤</span>
+          <span>المعلومات الشخصية</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name"><span class="required">*</span> الاسم الكامل</label>
+            <input type="text" id="name" name="name" class="form-input" placeholder="أدخل اسمك الكامل" required>
+            <div class="error-message" id="name-error">يرجى إدخال الاسم</div>
+          </div>
+          <div class="form-group">
+            <label for="phone"><span class="required">*</span> رقم الهاتف</label>
+            <input type="tel" id="phone" name="phone" class="form-input" placeholder="05X XXX XXXX" required>
+            <div class="error-message" id="phone-error">يرجى إدخال رقم هاتف صحيح</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Purchase Details -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="icon blue">🛒</span>
+          <span>تفاصيل الشراء</span>
+        </div>
+        <div class="form-group">
+          <label><span class="required">*</span> تاريخ الشراء</label>
+          <div class="options-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 10px;">
+            <label class="option-card">
+              <input type="radio" name="date_preset" value="today" required>
+              <span class="option-label" style="justify-content: center; padding: 10px 8px; font-size: 0.85rem;">
+                📅 اليوم
+              </span>
+            </label>
+            <label class="option-card">
+              <input type="radio" name="date_preset" value="yesterday">
+              <span class="option-label" style="justify-content: center; padding: 10px 8px; font-size: 0.85rem;">
+                ⏳ أمس
+              </span>
+            </label>
+            <label class="option-card">
+              <input type="radio" name="date_preset" value="custom">
+              <span class="option-label" style="justify-content: center; padding: 10px 8px; font-size: 0.85rem;">
+                🗓️ تاريخ آخر
+              </span>
+            </label>
+          </div>
+          <div id="custom-date-container" style="display: none; margin-top: 10px;">
+            <input type="date" id="purchase-date" name="purchase_date" class="form-input">
+          </div>
+          <div class="error-message" id="date-error">يرجى اختيار تاريخ الشراء</div>
+        </div>
+        <div class="form-group" style="margin-top: 18px;">
+          <label><span class="required">*</span> هل تم الشراء؟</label>
+          <div class="options-grid">
+            <label class="option-card">
+              <input type="radio" name="purchased" value="نعم" required>
+              <span class="option-label">
+                <span class="option-icon">✅</span>
+                نعم، تم الشراء
+              </span>
+            </label>
+            <label class="option-card">
+              <input type="radio" name="purchased" value="لا">
+              <span class="option-label">
+                <span class="option-icon">❌</span>
+                لا، لم يتم الشراء
+              </span>
+            </label>
+          </div>
+          <div class="error-message" id="purchased-error">يرجى اختيار إجابة</div>
+        </div>
+      </div>
+
+      <!-- Section 3: Source -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="icon gold">📢</span>
+          <span>كيف عرفت عنا؟</span>
+        </div>
+        <div class="options-grid">
+          <label class="option-card">
+            <input type="radio" name="source" value="فيسبوك" required>
+            <span class="option-label">
+              <span class="option-icon">📘</span>
+              فيسبوك
+            </span>
+          </label>
+          <label class="option-card">
+            <input type="radio" name="source" value="تيك توك">
+            <span class="option-label">
+              <span class="option-icon">🎵</span>
+              تيك توك
+            </span>
+          </label>
+          <label class="option-card">
+            <input type="radio" name="source" value="انستجرام">
+            <span class="option-label">
+              <span class="option-icon">📸</span>
+              انستجرام
+            </span>
+          </label>
+          <label class="option-card">
+            <input type="radio" name="source" value="واتساب">
+            <span class="option-label">
+              <span class="option-icon">💬</span>
+              واتساب
+            </span>
+          </label>
+          <label class="option-card" style="grid-column: 1 / -1;">
+            <input type="radio" name="source" value="بالصدفة">
+            <span class="option-label">
+              <span class="option-icon">🎲</span>
+              بالصدفة
+            </span>
+          </label>
+        </div>
+        <div class="error-message" id="source-error">يرجى اختيار كيف عرفت عنا</div>
+      </div>
+
+      <!-- Section 4: Emirate -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="icon emerald">📍</span>
+          <span>الإمارة</span>
+        </div>
+        <div class="form-group">
+          <label for="emirate"><span class="required">*</span> اختر إمارتك</label>
+          <select id="emirate" name="emirate" class="form-input" required>
+            <option value="" disabled selected>اختر الإمارة</option>
+            <option value="أبوظبي">أبوظبي</option>
+            <option value="دبي">دبي</option>
+            <option value="الشارقة">الشارقة</option>
+            <option value="عجمان">عجمان</option>
+            <option value="أم القيوين">أم القيوين</option>
+            <option value="رأس الخيمة">رأس الخيمة</option>
+            <option value="الفجيرة">الفجيرة</option>
+          </select>
+          <div class="error-message" id="emirate-error">يرجى اختيار الإمارة</div>
+        </div>
+      </div>
+
+      <!-- Section 5: Experience -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="icon rose">💬</span>
+          <span>تجربتك مع الموظفين</span>
+        </div>
+        <div class="form-group">
+          <label for="experience"><span class="required">*</span> تجربتك مع الموظفين</label>
+          <textarea id="experience" name="experience" class="form-input" placeholder="أخبرنا عن تجربتك مع موظفينا... كيف كان الاستقبال؟ هل ساعدوك في الاختيار؟" rows="4" required></textarea>
+          <div class="error-message" id="experience-error">يرجى إدخال تجربتك مع الموظفين</div>
+        </div>
+      </div>
+
+      <!-- Section 6: Rating -->
+      <div class="form-section">
+        <div class="section-title">
+          <span class="icon gold">⭐</span>
+          <span>تقييم المحل</span>
+        </div>
+        <div class="form-group">
+          <label><span class="required">*</span> كم نجمة تعطي المحل؟</label>
+          <div class="star-rating" id="star-rating">
+            <input type="radio" name="rating" value="5" id="star5">
+            <label for="star5" title="ممتاز">★</label>
+            <input type="radio" name="rating" value="4" id="star4">
+            <label for="star4" title="جيد جداً">★</label>
+            <input type="radio" name="rating" value="3" id="star3">
+            <label for="star3" title="جيد">★</label>
+            <input type="radio" name="rating" value="2" id="star2">
+            <label for="star2" title="مقبول">★</label>
+            <input type="radio" name="rating" value="1" id="star1">
+            <label for="star1" title="ضعيف">★</label>
+          </div>
+          <div class="rating-text" id="rating-text">اختر تقييمك</div>
+          <div class="error-message" id="rating-error" style="text-align:center;">يرجى اختيار التقييم</div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="submit-btn" id="submit-btn">
+        <span class="btn-text">
+          <span class="btn-label">إرسال الاستبيان 🚀</span>
+          <span class="spinner"></span>
+        </span>
+      </button>
+
+    </form>
+
+    <!-- Success Screen -->
+    <div class="success-screen" id="success-screen">
+      <div class="success-icon">🎉</div>
+      <h2 class="success-title">شكراً لمشاركتك!</h2>
+      <p class="success-subtitle">رأيك يهمنا ويساعدنا على التطوير المستمر</p>
+
+      <!-- Coupon -->
+      <div class="coupon-card">
+        <div class="coupon-badge">🎁 هدية خاصة لك</div>
+        <div class="coupon-discount">خصم 20%</div>
+        <div class="coupon-description">على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة</div>
+        <div class="coupon-code" id="coupon-code" onclick="copyCoupon()">
+          <span id="coupon-value">---</span>
+          <span class="copy-icon">📋</span>
+          <span class="copy-tooltip" id="copy-tooltip">تم النسخ!</span>
+        </div>
+      </div>
+
+      <!-- Invoice Download (hidden by default, shown if token has invoice) -->
+      <div class="maps-card" id="invoice-card" style="display: none;">
+        <div class="maps-header">
+          <div class="maps-icon" style="background: #d1fae5;">🧾</div>
+          <div>
+            <div class="maps-title">فاتورة الشراء الخاصة بك</div>
+            <div class="maps-subtitle">يمكنك الآن تحميل فاتورتك بعد إكمال الاستبيان</div>
+          </div>
+        </div>
+        <a href="#" id="invoice-download-btn" class="maps-btn" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; border-color: rgba(16, 185, 129, 0.3);">
+          📥 تحميل الفاتورة
+        </a>
+      </div>
+
+      <!-- Google Maps -->
+      <div class="maps-card">
+        <div class="maps-header">
+          <div class="maps-icon">📍</div>
+          <div>
+            <div class="maps-title">قيّمنا على خرائط جوجل</div>
+            <div class="maps-subtitle">تقييمك يساعد عملاء آخرين في الوصول إلينا</div>
+          </div>
+        </div>
+        <a href="https://maps.app.goo.gl/1UkyYkVRMNbsEvah6" target="_blank" rel="noopener" class="maps-btn" id="maps-link">
+          📍 فتح خرائط جوجل وتقييم فرع الشارقة
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

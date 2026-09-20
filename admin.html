@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الإدارة - أمير العفيفي للهواتف</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .admin-header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding: 32px 24px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-2xl);
+      backdrop-filter: blur(20px);
+    }
+
+    .admin-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+    }
+
+    .admin-header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-lg);
+      padding: 24px 20px;
+      backdrop-filter: blur(16px);
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      border-color: rgba(139, 92, 246, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* Table */
+    .table-wrapper {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-xl);
+      overflow-x: auto;
+      backdrop-filter: blur(16px);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .data-table th {
+      padding: 16px 14px;
+      text-align: right;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      border-bottom: 1px solid var(--border-glass);
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+      padding: 14px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .data-table tbody tr {
+      transition: background 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+      background: rgba(139, 92, 246, 0.05);
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge.yes {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+    }
+
+    .badge.no {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--accent-rose);
+    }
+
+    .stars {
+      color: var(--accent-gold);
+      font-size: 0.9rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: var(--radius-md);
+      color: var(--accent-purple-light);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 16px;
+    }
+
+    .refresh-btn:hover {
+      background: rgba(139, 92, 246, 0.2);
+    }
+
+    .export-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-md);
+      color: var(--accent-emerald);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 16px;
+      margin-right: 8px;
+    }
+
+    .export-btn:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .toolbar .count {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Link Generator */
+    .link-generator {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-xl);
+      padding: 28px 24px;
+      margin-bottom: 32px;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .link-generator::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient-gold);
+    }
+
+    .link-generator h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .link-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .link-form .full-width {
+      grid-column: 1 / -1;
+    }
+
+    .link-form label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .link-form input[type="text"],
+    .link-form input[type="tel"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.8);
+      border: 1.5px solid rgba(0,0,0,0.08);
+      border-radius: var(--radius-md);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      outline: none;
+      direction: rtl;
+      transition: all 0.3s ease;
+    }
+
+    .link-form input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+    }
+
+    .file-upload {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.8);
+      border: 1.5px dashed rgba(0,0,0,0.12);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .file-upload:hover {
+      border-color: var(--accent-purple);
+      background: #f5f3ff;
+    }
+
+    .file-upload input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .file-upload .file-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .file-upload .file-name {
+      font-size: 0.8rem;
+      color: var(--accent-emerald);
+      font-weight: 600;
+    }
+
+    .generate-btn {
+      padding: 12px 28px;
+      background: var(--gradient-gold);
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(245,158,11,0.25);
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(245,158,11,0.35);
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Generated Link Result */
+    .link-result {
+      display: none;
+      margin-top: 18px;
+      padding: 16px;
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      border: 1.5px solid rgba(16,185,129,0.2);
+      border-radius: var(--radius-md);
+    }
+
+    .link-result.show {
+      display: block;
+      animation: fadeInUp 0.4s ease;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .link-result .result-label {
+      font-size: 0.8rem;
+      color: #065f46;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .link-result .result-url {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: white;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      direction: ltr;
+      word-break: break-all;
+      color: var(--text-primary);
+    }
+
+    .link-result .result-url .copy-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      background: var(--accent-emerald);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .link-result .result-url .copy-btn:hover {
+      background: #059669;
+    }
+
+    .link-result .share-btns {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .link-result .share-btns a {
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .link-result .share-btns .wa-btn {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .link-result .share-btns .wa-btn:hover {
+      background: #bbf7d0;
+    }
+
+    /* Links Table */
+    .links-table-wrapper {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-xl);
+      overflow-x: auto;
+      backdrop-filter: blur(16px);
+      margin-bottom: 32px;
+    }
+
+    .section-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+
+    .badge.pending {
+      background: rgba(245,158,11,0.15);
+      color: #b45309;
+    }
+
+    .badge.done {
+      background: rgba(16,185,129,0.15);
+      color: var(--accent-emerald);
+    }
+
+    .badge.invoice {
+      background: rgba(59,130,246,0.12);
+      color: var(--accent-blue);
+    }
+
+    @media (max-width: 640px) {
+      .link-form {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-animation">
+    <div class="orb"></div>
+    <div class="orb"></div>
+    <div class="orb"></div>
+  </div>
+
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>📊 لوحة إدارة الاستبيانات</h1>
+      <h2 style="font-size: 1.15rem; color: var(--accent-purple); margin-bottom: 6px;">أمير العفيفي للهواتف - فرع الشارقة 🇦🇪</h2>
+      <p>عرض وتحليل ردود العملاء وإنشاء روابط الاستبيان الفريدة</p>
+    </div>
+
+    <!-- Link Generator -->
+    <div class="link-generator">
+      <h2>🔗 إنشاء رابط استبيان لعميل</h2>
+      <div class="link-form" id="link-form">
+        <div>
+          <label>اسم العميل *</label>
+          <input type="text" id="link-name" placeholder="أدخل اسم العميل">
+        </div>
+        <div>
+          <label>رقم الهاتف (اختياري)</label>
+          <input type="tel" id="link-phone" placeholder="05X XXX XXXX">
+        </div>
+        <div class="full-width">
+          <label>فاتورة الشراء (اختياري - PDF فقط)</label>
+          <div class="file-upload" id="file-upload-area">
+            <span style="font-size: 1.3rem;">📎</span>
+            <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF فقط</span>
+            <span class="file-name" id="file-name" style="display:none;"></span>
+            <input type="file" id="link-invoice" accept=".pdf">
+          </div>
+        </div>
+        <div class="full-width" style="display: flex; gap: 12px; align-items: flex-end;">
+          <button class="generate-btn" id="generate-btn" onclick="generateLink()">✨ إنشاء الرابط</button>
+        </div>
+      </div>
+
+      <div class="link-result" id="link-result">
+        <div class="result-label">✅ تم إنشاء الرابط بنجاح!</div>
+        <div class="result-url">
+          <span id="generated-url"></span>
+          <button class="copy-btn" onclick="copyGeneratedLink()">📋 نسخ</button>
+        </div>
+        <div class="share-btns">
+          <a href="#" class="wa-btn" id="wa-share-btn" target="_blank">💬 مشاركة عبر واتساب</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coupon Verifier -->
+    <div class="link-generator" style="margin-top: 24px; border-top: 4px solid var(--accent-emerald);">
+      <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        🔍 التحقق من صلاحية كوبون الخصم
+      </h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+        أدخل كود الكوبون الموضح مع العميل للتحقق من هويته وتحميل فاتورته الـ PDF.
+      </p>
+      <div style="display: flex; gap: 12px; max-width: 600px; flex-wrap: wrap;">
+        <input type="text" id="coupon-search-input" placeholder="مثال: ACC20-XXXXXX" style="flex: 1; min-width: 200px; padding: 12px 16px; background: rgba(255,255,255,0.8); border: 1.5px solid rgba(0,0,0,0.08); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.9rem; direction: ltr; text-transform: uppercase;">
+        <button class="generate-btn" id="search-coupon-btn" onclick="verifyCoupon()" style="background: var(--gradient-success); box-shadow: 0 4px 16px rgba(16,185,129,0.25);">🔍 بحث وتحقق</button>
+      </div>
+
+      <div id="coupon-search-result" style="display: none; margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.9); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft);">
+      </div>
+    </div>
+
+    <!-- Customer Links Table -->
+    <div class="section-heading">🔗 روابط العملاء</div>
+    <div class="links-table-wrapper" style="margin-bottom: 32px;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>العميل</th>
+            <th>الهاتف</th>
+            <th>الفاتورة</th>
+            <th>الحالة</th>
+            <th>التاريخ</th>
+            <th>الرابط</th>
+          </tr>
+        </thead>
+        <tbody id="links-body">
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <div class="empty-icon">🔗</div>
+                <p>لم يتم إنشاء روابط بعد</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">إجمالي الردود</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-rating">0</div>
+        <div class="stat-label">متوسط التقييم ⭐</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-purchased">0%</div>
+        <div class="stat-label">نسبة الشراء</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-top-source">-</div>
+        <div class="stat-label">أكثر مصدر</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <span class="count" id="table-count">جاري التحميل...</span>
+      <div>
+        <button class="refresh-btn" onclick="loadData()">🔄 تحديث</button>
+        <button class="export-btn" onclick="exportCSV()">📥 تصدير CSV</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>الاسم</th>
+            <th>الهاتف</th>
+            <th>تاريخ الشراء</th>
+            <th>المصدر</th>
+            <th>تم الشراء</th>
+            <th>الإمارة</th>
+            <th>التقييم</th>
+            <th>الكوبون</th>
+            <th>التجربة</th>
+            <th>التاريخ</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr>
+            <td colspan="10">
+              <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p>جاري تحميل البيانات...</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let surveyData = [];
+    let lastGeneratedUrl = '';
+
+    // ========================================
+    // File Upload UI
+    // ========================================
+    document.getElementById('link-invoice').addEventListener('change', function() {
+      const fileName = this.files[0]?.name;
+      if (fileName) {
+        document.getElementById('file-label').style.display = 'none';
+        document.getElementById('file-name').style.display = 'inline';
+        document.getElementById('file-name').textContent = '✅ ' + fileName;
+      } else {
+        document.getElementById('file-label').style.display = 'inline';
+        document.getElementById('file-name').style.display = 'none';
+      }
+    });
+
+    // ========================================
+    // Generate Link
+    // ========================================
+    async function generateLink() {
+      const name = document.getElementById('link-name').value.trim();
+      const phone = document.getElementById('link-phone').value.trim();
+      const fileInput = document.getElementById('link-invoice');
+      const btn = document.getElementById('generate-btn');
+
+      if (!name) {
+        alert('يرجى إدخال اسم العميل');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري الإنشاء...';
+
+      try {
+        const formData = new FormData();
+        formData.append('customer_name', name);
+        formData.append('phone', phone);
+        if (fileInput.files[0]) {
+          formData.append('invoice', fileInput.files[0]);
+        }
+
+        const res = await fetch('/api/links', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          const baseUrl = window.location.origin;
+          lastGeneratedUrl = `${baseUrl}/?t=${result.token}`;
+
+          document.getElementById('generated-url').textContent = lastGeneratedUrl;
+          document.getElementById('link-result').classList.add('show');
+
+          // WhatsApp share
+          const waMsg = encodeURIComponent(`مرحباً ${name}! 🎉\nيسعدنا تواصلك مع أمير العفيفي للهواتف (فرع الشارقة) 📱\nنتمنى أنك استمتعت بتجربتك معنا. نرجو منك تعبئة هذا الاستبيان ورأيك بالموظفين${result.has_invoice ? ' لتتمكن من تحميل فاتورتك PDF' : ''}:\n${lastGeneratedUrl}`);
+          const waNumber = phone.replace(/[\s\-\(\)]/g, '');
+          document.getElementById('wa-share-btn').href = `https://wa.me/${waNumber}?text=${waMsg}`;
+
+          // Reset form
+          document.getElementById('link-name').value = '';
+          document.getElementById('link-phone').value = '';
+          fileInput.value = '';
+          document.getElementById('file-label').style.display = 'inline';
+          document.getElementById('file-name').style.display = 'none';
+
+          // Reload links table
+          loadLinks();
+        } else {
+          alert(result.message || 'حدث خطأ');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('خطأ في الاتصال بالخادم');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✨ إنشاء الرابط';
+      }
+    }
+
+    function copyGeneratedLink() {
+      navigator.clipboard.writeText(lastGeneratedUrl).then(() => {
+        alert('تم نسخ الرابط! 📋');
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = lastGeneratedUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('تم نسخ الرابط! 📋');
+      });
+    }
+
+    // ========================================
+    // Verify Coupon
+    // ========================================
+    async function verifyCoupon() {
+      const code = document.getElementById('coupon-search-input').value.trim();
+      const resultDiv = document.getElementById('coupon-search-result');
+      const btn = document.getElementById('search-coupon-btn');
+
+      if (!code) {
+        alert('يرجى إدخال كود الكوبون');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ جاري البحث...';
+      resultDiv.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/coupon/${encodeURIComponent(code)}`);
+        const data = await res.json();
+
+        if (data.success) {
+          const info = data.data;
+          const ratingStars = '★'.repeat(info.rating) + '☆'.repeat(5 - info.rating);
+          
+          let invoiceHtml = '<span style="color: var(--text-muted);">لا توجد فاتورة مرفقة</span>';
+          if (info.has_invoice) {
+            invoiceHtml = `
+              <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px;">
+                <span style="font-size: 1.5rem;">📄</span>
+                <div style="text-align: right;">
+                  <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">${escapeHtml(info.invoice_original_name || 'invoice.pdf')}</div>
+                  <a href="/api/invoice/${info.token}" target="_blank" style="font-size: 0.8rem; color: var(--accent-blue); text-decoration: underline; font-weight: 600;">📥 تحميل وتنزيل الفاتورة PDF</a>
+                </div>
+              </div>`;
+          }
+
+          resultDiv.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">الاسم الكامل للعميل</div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">👤 ${escapeHtml(info.name)}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">رقم الهاتف</div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 2px; direction: ltr; text-align: right;">📞 ${escapeHtml(info.phone || '-')}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">تقييم المحل</div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: var(--accent-gold); margin-top: 2px;">${ratingStars}</div>
+              </div>
+              <div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">تاريخ الشراء</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-top: 2px;">📅 ${escapeHtml(info.purchase_date)}</div>
+              </div>
+            </div>
+            
+            <div style="margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 14px;">
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">تجربة العميل مع الموظفين (إجباري)</div>
+              <div style="font-size: 0.88rem; color: var(--text-secondary); background: #f8fafc; padding: 12px; border-radius: var(--radius-md); border: 1.5px solid rgba(0,0,0,0.02); font-style: italic;">
+                "${escapeHtml(info.experience)}"
+              </div>
+            </div>
+
+            <div style="margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 14px;">
+              <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">فاتورة المشتريات</div>
+              ${invoiceHtml}
+            </div>
+          `;
+          resultDiv.style.display = 'block';
+          resultDiv.style.borderLeft = '4px solid var(--accent-emerald)';
+        } else {
+          alert(data.message || 'الكوبون غير صالح');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('خطأ في الاتصال بالخادم أثناء التحقق من الكوبون');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔍 بحث وتحقق';
+      }
+    }
+
+    // ========================================
+    // Delete Link
+    // ========================================
+    async function deleteLink(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الرابط؟ سيتم أيضاً حذف ملف الفاتورة المرتبط به نهائياً.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          alert('تم حذف الرابط بنجاح');
+          loadLinks();
+        } else {
+          alert(result.message || 'حدث خطأ أثناء حذف الرابط');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('خطأ في الاتصال بالخادم');
+      }
+    }
+
+    // ========================================
+    // Delete Survey Response
+    // ========================================
+    async function deleteSurvey(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الاستبيان؟ لا يمكن التراجع عن هذه الخطوة.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/surveys/${id}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+          alert('تم حذف الرد بنجاح');
+          loadData();
+        } else {
+          alert(result.message || 'حدث خطأ أثناء حذف الرد');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('خطأ في الاتصال بالخادم');
+      }
+    }
+
+    // ========================================
+    // Load Customer Links
+    // ========================================
+    async function loadLinks() {
+      try {
+        const res = await fetch('/api/links');
+        const data = await res.json();
+        if (data.success) {
+          renderLinks(data.data);
+        }
+      } catch (e) {
+        console.error('Error loading links:', e);
+      }
+    }
+
+    function renderLinks(links) {
+      const tbody = document.getElementById('links-body');
+      if (links.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🔗</div><p>لم يتم إنشاء روابط بعد</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = links.map((link, i) => {
+        const url = `${window.location.origin}/?t=${link.token}`;
+        return `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(link.customer_name)}</td>
+            <td style="direction:ltr;text-align:right;">${escapeHtml(link.phone || '-')}</td>
+            <td>${link.has_invoice ? '<span class="badge invoice">🧾 مرفقة</span>' : '<span style="color:var(--text-muted);">-</span>'}</td>
+            <td>${link.is_completed ? '<span class="badge done">✅ مكتمل</span>' : '<span class="badge pending">⏳ بانتظار</span>'}</td>
+            <td style="font-size:0.78rem;color:var(--text-muted);">${new Date(link.created_at).toLocaleDateString('ar-AE')}</td>
+            <td style="display: flex; gap: 6px;">
+              <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;" onclick="navigator.clipboard.writeText('${url}');this.textContent='✅ تم';">📋 نسخ</button>
+              <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#f43f5e;" onclick="deleteLink(${link.id})">🗑️ حذف</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ========================================
+    // Load Survey Data
+    // ========================================
+    async function loadData() {
+      try {
+        const surveysRes = await fetch('/api/surveys');
+        const surveysData = await surveysRes.json();
+
+        const statsRes = await fetch('/api/stats');
+        const statsData = await statsRes.json();
+
+        if (surveysData.success) {
+          surveyData = surveysData.data;
+          renderTable(surveyData);
+          document.getElementById('table-count').textContent = `${surveysData.total} رد`;
+        }
+
+        if (statsData.success) {
+          const stats = statsData.stats;
+          document.getElementById('stat-total').textContent = stats.totalResponses;
+          document.getElementById('stat-rating').textContent = stats.averageRating;
+
+          const purchasedData = stats.purchased.find(p => p.purchased === 'نعم');
+          const purchasePercent = stats.totalResponses > 0
+            ? Math.round((purchasedData?.count || 0) / stats.totalResponses * 100)
+            : 0;
+          document.getElementById('stat-purchased').textContent = purchasePercent + '%';
+
+          if (stats.bySource.length > 0) {
+            const topSource = stats.bySource.reduce((a, b) => a.count > b.count ? a : b);
+            document.getElementById('stat-top-source').textContent = topSource.source;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('table-body');
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📭</div><p>لا توجد ردود بعد</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map((row, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td style="direction:ltr;text-align:right;">${escapeHtml(row.phone)}</td>
+          <td>${row.purchase_date}</td>
+          <td>${escapeHtml(row.source)}</td>
+          <td><span class="badge ${row.purchased === 'نعم' ? 'yes' : 'no'}">${escapeHtml(row.purchased)}</span></td>
+          <td>${escapeHtml(row.emirate)}</td>
+          <td><span class="stars">${'★'.repeat(row.rating)}${'☆'.repeat(5 - row.rating)}</span></td>
+          <td style="font-family:monospace;font-weight:600;color:var(--accent-purple);">${escapeHtml(row.coupon_code || '-')}</td>
+          <td title="${escapeHtml(row.experience)}">${escapeHtml((row.experience || '').substring(0, 40))}${(row.experience || '').length > 40 ? '...' : ''}</td>
+          <td style="font-size:0.78rem;color:var(--text-muted);">${new Date(row.created_at).toLocaleDateString('ar-AE')}</td>
+          <td>
+            <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#f43f5e;" onclick="deleteSurvey(${row.id})">🗑️ حذف</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function exportCSV() {
+      if (surveyData.length === 0) {
+        alert('لا توجد بيانات للتصدير');
+        return;
+      }
+
+      const headers = ['الاسم', 'الهاتف', 'تاريخ الشراء', 'المصدر', 'تم الشراء', 'الإمارة', 'التقييم', 'التجربة', 'التاريخ'];
+      const rows = surveyData.map(row => [
+        row.name,
+        row.phone,
+        row.purchase_date,
+        row.source,
+        row.purchased,
+        row.emirate,
+        row.rating,
+        (row.experience || '').replace(/"/g, '""'),
+        row.created_at
+      ]);
+
+      let csv = '\uFEFF' + headers.join(',') + '\n';
+      rows.forEach(row => {
+        csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `surveys_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    }
+
+    // Load all data on page load
+    loadData();
+    loadLinks();
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => { loadData(); loadLinks(); }, 30000);
+  </script>
+</body>
+</html>
