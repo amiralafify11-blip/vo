@@ -19,16 +19,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Initialize SQLite Database (supports both better-sqlite3 and Node built-in node:sqlite)
+// Initialize SQLite Database (built-in in modern Node.js)
 let db;
 try {
-  const Database = require('better-sqlite3');
-  db = new Database(path.join(__dirname, 'survey.db'));
-  db.pragma('journal_mode = WAL');
-} catch (e) {
   const { DatabaseSync } = require('node:sqlite');
   db = new DatabaseSync(path.join(__dirname, 'survey.db'));
   db.exec('PRAGMA journal_mode = WAL');
+} catch (e) {
+  const Database = require('better-sqlite3');
+  db = new Database(path.join(__dirname, 'survey.db'));
+  db.pragma('journal_mode = WAL');
 }
 
 // Create surveys table
