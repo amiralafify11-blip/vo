@@ -1,6 +1,9 @@
 [build]
   publish = "."
 
+[build.environment]
+  NPM_FLAGS = "--version"
+
 [[redirects]]
   from = "/survey"
   to = "/index.html"
