@@ -5,6 +5,12 @@
   NPM_FLAGS = "--version"
 
 [[redirects]]
+  from = "/api/*"
+  to = "https://vo-3hp3.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/survey"
   to = "/index.html"
   status = 200
