@@ -2,143 +2,185 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const crypto = require('crypto');
-const fs = require('fs');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// ============================================
+// GitHub Configuration
+// ============================================
+const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
+const GITHUB_OWNER  = process.env.GITHUB_OWNER  || 'amiralafify11-blip';
+const GITHUB_REPO   = process.env.GITHUB_REPO   || 'vo';
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+
+// ============================================
+// In-memory cache (cleared on each write so
+// data is always fresh after mutations)
+// ============================================
+const cache = {
+  links: null, linksSha: null,
+  surveys: null, surveysSha: null,
+  settings: null, settingsSha: null
+};
+
+// ============================================
+// Default Settings
+// ============================================
+const defaultSettings = {
+  store_name:    'أمير العفيفي للهواتف',
+  branch_name:   'فرع الشارقة 🇦🇪',
+  meta_title:    'استبيان رضا العملاء - أمير العفيفي للهواتف',
+  meta_desc:     'استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
+  welcome_desc:  'شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!',
+  discount_text: 'خصم 20%',
+  coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
+  maps_url:      'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6'
+};
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Initialize SQLite Database (built-in in modern Node.js)
-let db;
-try {
-  const { DatabaseSync } = require('node:sqlite');
-  db = new DatabaseSync(path.join(__dirname, 'survey.db'));
-  db.exec('PRAGMA journal_mode = WAL');
-} catch (e) {
-  const Database = require('better-sqlite3');
-  db = new Database(path.join(__dirname, 'survey.db'));
-  db.pragma('journal_mode = WAL');
-}
-
-// Create surveys table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS surveys (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    phone TEXT NOT NULL,
-    purchase_date TEXT NOT NULL,
-    source TEXT NOT NULL,
-    purchased TEXT NOT NULL,
-    emirate TEXT NOT NULL,
-    experience TEXT,
-    rating INTEGER NOT NULL,
-    token TEXT,
-    coupon_code TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-// Create customer_links table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS customer_links (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    token TEXT UNIQUE NOT NULL,
-    customer_name TEXT NOT NULL,
-    phone TEXT,
-    has_invoice INTEGER DEFAULT 0,
-    invoice_filename TEXT,
-    invoice_original_name TEXT,
-    is_completed INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-// Add token column to surveys if not exists
-try {
-  db.exec(`ALTER TABLE surveys ADD COLUMN token TEXT`);
-} catch (e) {
-  // Column already exists, ignore
-}
-
-// Add coupon_code column to surveys if not exists
-try {
-  db.exec(`ALTER TABLE surveys ADD COLUMN coupon_code TEXT`);
-} catch (e) {
-  // Column already exists, ignore
-}
-
-// Create settings table
-db.exec(`
-  CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  )
-`);
-
-const defaultSettings = {
-  store_name: 'أمير العفيفي للهواتف',
-  branch_name: 'فرع الشارقة 🇦🇪',
-  meta_title: 'استبيان رضا العملاء - أمير العفيفي للهواتف',
-  meta_desc: 'استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
-  welcome_desc: 'شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!',
-  discount_text: 'خصم 20%',
-  coupon_desc: 'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
-  maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6'
-};
-
 // ============================================
-// API: Get Settings
+// GitHub API Helpers
 // ============================================
-app.get('/api/settings', (req, res) => {
-  try {
-    const rows = db.prepare('SELECT key, value FROM settings').all();
-    const settings = { ...defaultSettings };
-    rows.forEach(r => {
-      settings[r.key] = r.value;
-    });
-    res.json({ success: true, data: settings });
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإعدادات' });
-  }
-});
-
-// ============================================
-// API: Save Settings
-// ============================================
-app.post('/api/settings', (req, res) => {
-  try {
-    const data = req.body;
-    const stmt = db.prepare(`
-      INSERT INTO settings (key, value) VALUES (?, ?)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    `);
-    
-    for (const [key, val] of Object.entries(data)) {
-      if (typeof val === 'string') {
-        stmt.run(key, val);
+function githubRequest(method, apiPath, body) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : null;
+    const options = {
+      hostname: 'api.github.com',
+      path: apiPath,
+      method: method,
+      headers: {
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'User-Agent': 'customer-survey-app/1.0',
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
       }
-    }
-    
-    res.json({ success: true, message: 'تم حفظ الإعدادات بنجاح!' });
-  } catch (error) {
-    console.error('Error saving settings:', error);
-    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حفظ الإعدادات' });
+    };
+    if (data) options.headers['Content-Length'] = Buffer.byteLength(data);
+
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', chunk => responseData += chunk);
+      res.on('end', () => {
+        try {
+          resolve({ status: res.statusCode, data: JSON.parse(responseData) });
+        } catch (e) {
+          resolve({ status: res.statusCode, data: responseData });
+        }
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+async function readJsonFromGitHub(filePath) {
+  const res = await githubRequest('GET',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_BRANCH}`);
+  if (res.status === 404) return { data: null, sha: null };
+  if (res.status !== 200) throw new Error(`GitHub read error: ${res.status}`);
+  const raw = Buffer.from(res.data.content.replace(/\n/g, ''), 'base64').toString('utf8');
+  return { data: JSON.parse(raw), sha: res.data.sha };
+}
+
+async function writeJsonToGitHub(filePath, data, sha, message) {
+  const content = Buffer.from(JSON.stringify(data, null, 2), 'utf8').toString('base64');
+  const body = { message: message || `Update ${filePath}`, content, branch: GITHUB_BRANCH };
+  if (sha) body.sha = sha;
+
+  const res = await githubRequest('PUT',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, body);
+  if (res.status !== 200 && res.status !== 201) {
+    throw new Error(`GitHub write error ${res.status}: ${JSON.stringify(res.data?.message)}`);
   }
-});
+  return res.data.content?.sha;
+}
+
+async function writeBinaryToGitHub(filePath, buffer, sha, message) {
+  const content = buffer.toString('base64');
+  const body = { message: message || `Upload ${filePath}`, content, branch: GITHUB_BRANCH };
+  if (sha) body.sha = sha;
+
+  const res = await githubRequest('PUT',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, body);
+  if (res.status !== 200 && res.status !== 201) {
+    throw new Error(`GitHub write error ${res.status}`);
+  }
+  return res.data.content?.sha;
+}
+
+async function readBinaryFromGitHub(filePath) {
+  const res = await githubRequest('GET',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_BRANCH}`);
+  if (res.status === 404) return null;
+  if (res.status !== 200) throw new Error(`GitHub read error: ${res.status}`);
+  const buffer = Buffer.from(res.data.content.replace(/\n/g, ''), 'base64');
+  return { buffer, sha: res.data.sha };
+}
+
+async function deleteFromGitHub(filePath, sha, message) {
+  const body = { message: message || `Delete ${filePath}`, sha, branch: GITHUB_BRANCH };
+  const res = await githubRequest('DELETE',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, body);
+  return res.status === 200;
+}
 
 // ============================================
-// Multer-free file upload using raw body parsing
+// Cached Data Access
+// ============================================
+async function getLinks(forceRefresh) {
+  if (forceRefresh || cache.links === null) {
+    const { data, sha } = await readJsonFromGitHub('data/links.json');
+    cache.links = data || [];
+    cache.linksSha = sha;
+  }
+  return { links: cache.links, sha: cache.linksSha };
+}
+
+async function persistLinks(links, sha) {
+  const newSha = await writeJsonToGitHub('data/links.json', links, sha, 'Update customer links');
+  cache.links = links;
+  cache.linksSha = newSha || sha;
+}
+
+async function getSurveys(forceRefresh) {
+  if (forceRefresh || cache.surveys === null) {
+    const { data, sha } = await readJsonFromGitHub('data/surveys.json');
+    cache.surveys = data || [];
+    cache.surveysSha = sha;
+  }
+  return { surveys: cache.surveys, sha: cache.surveysSha };
+}
+
+async function persistSurveys(surveys, sha) {
+  const newSha = await writeJsonToGitHub('data/surveys.json', surveys, sha, 'Update surveys');
+  cache.surveys = surveys;
+  cache.surveysSha = newSha || sha;
+}
+
+async function getSettings(forceRefresh) {
+  if (forceRefresh || cache.settings === null) {
+    const { data, sha } = await readJsonFromGitHub('data/settings.json');
+    cache.settings = data ? { ...defaultSettings, ...data } : { ...defaultSettings };
+    cache.settingsSha = sha;
+  }
+  return { settings: cache.settings, sha: cache.settingsSha };
+}
+
+async function persistSettings(settings, sha) {
+  const newSha = await writeJsonToGitHub('data/settings.json', settings, sha, 'Update settings');
+  cache.settings = settings;
+  cache.settingsSha = newSha || sha;
+}
+
+// ============================================
+// Multer-free file upload (multipart parser)
 // ============================================
 const multerFree = (req, res, next) => {
   if (req.headers['content-type'] && req.headers['content-type'].startsWith('multipart/form-data')) {
@@ -175,17 +217,16 @@ const multerFree = (req, res, next) => {
 function parseMultipart(buffer, boundary) {
   const parts = [];
   const boundaryBuffer = Buffer.from('--' + boundary);
-  const endBuffer = Buffer.from('--' + boundary + '--');
 
   let start = indexOf(buffer, boundaryBuffer, 0);
   if (start === -1) return parts;
 
   while (true) {
-    start = start + boundaryBuffer.length + 2; // skip \r\n after boundary
+    start = start + boundaryBuffer.length + 2;
     const end = indexOf(buffer, boundaryBuffer, start);
     if (end === -1) break;
 
-    const partData = buffer.slice(start, end - 2); // -2 for \r\n before boundary
+    const partData = buffer.slice(start, end - 2);
     const headerEnd = indexOf(partData, Buffer.from('\r\n\r\n'), 0);
     if (headerEnd === -1) { start = end; continue; }
 
@@ -221,9 +262,41 @@ function indexOf(buf, search, offset) {
 }
 
 // ============================================
+// API: Get Settings
+// ============================================
+app.get('/api/settings', async (req, res) => {
+  try {
+    const refresh = !!req.query.refresh;
+    const { settings } = await getSettings(refresh);
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإعدادات' });
+  }
+});
+
+// ============================================
+// API: Save Settings
+// ============================================
+app.post('/api/settings', async (req, res) => {
+  try {
+    const { settings, sha } = await getSettings();
+    const updated = { ...settings };
+    for (const [key, val] of Object.entries(req.body)) {
+      if (typeof val === 'string') updated[key] = val;
+    }
+    await persistSettings(updated, sha);
+    res.json({ success: true, message: 'تم حفظ الإعدادات بنجاح!' });
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حفظ الإعدادات' });
+  }
+});
+
+// ============================================
 // API: Create customer link (from admin)
 // ============================================
-app.post('/api/links', multerFree, (req, res) => {
+app.post('/api/links', multerFree, async (req, res) => {
   try {
     const { customer_name, phone } = req.body;
 
@@ -234,33 +307,48 @@ app.post('/api/links', multerFree, (req, res) => {
     const token = crypto.randomBytes(8).toString('hex');
     let invoiceFilename = null;
     let invoiceOriginalName = null;
-    let hasInvoice = 0;
+    let hasInvoice = false;
 
     if (req.file) {
       const ext = path.extname(req.file.originalname).toLowerCase();
       if (ext !== '.pdf') {
         return res.status(400).json({ success: false, message: 'عذراً، يجب رفع الفاتورة بصيغة PDF فقط' });
       }
-      invoiceFilename = `invoice_${token}${ext}`;
+      invoiceFilename = `invoice_${token}.pdf`;
       invoiceOriginalName = req.file.originalname;
-      hasInvoice = 1;
+      hasInvoice = true;
 
-      const filePath = path.join(uploadsDir, invoiceFilename);
-      fs.writeFileSync(filePath, req.file.buffer);
+      // Upload PDF to GitHub
+      await writeBinaryToGitHub(
+        `data/invoices/${invoiceFilename}`,
+        req.file.buffer,
+        null,
+        `Upload invoice for ${customer_name}`
+      );
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO customer_links (token, customer_name, phone, has_invoice, invoice_filename, invoice_original_name)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
+    const newLink = {
+      id: Date.now(),
+      token,
+      customer_name,
+      phone: phone || '',
+      has_invoice: hasInvoice,
+      invoice_filename: invoiceFilename,
+      invoice_original_name: invoiceOriginalName,
+      is_completed: false,
+      created_at: new Date().toISOString()
+    };
 
-    stmt.run(token, customer_name, phone || '', hasInvoice, invoiceFilename, invoiceOriginalName);
+    // Re-read fresh from GitHub before writing to avoid SHA conflict
+    const { links, sha } = await getLinks(true);
+    links.unshift(newLink);
+    await persistLinks(links, sha);
 
     res.json({
       success: true,
       token,
       link: `/?t=${token}`,
-      has_invoice: hasInvoice === 1
+      has_invoice: hasInvoice
     });
   } catch (error) {
     console.error('Error creating link:', error);
@@ -271,9 +359,10 @@ app.post('/api/links', multerFree, (req, res) => {
 // ============================================
 // API: Get link info (for survey page)
 // ============================================
-app.get('/api/links/:token', (req, res) => {
+app.get('/api/links/:token', async (req, res) => {
   try {
-    const link = db.prepare('SELECT * FROM customer_links WHERE token = ?').get(req.params.token);
+    const { links } = await getLinks();
+    const link = links.find(l => l.token === req.params.token);
 
     if (!link) {
       return res.status(404).json({ success: false, message: 'رابط غير صالح' });
@@ -284,8 +373,8 @@ app.get('/api/links/:token', (req, res) => {
       data: {
         customer_name: link.customer_name,
         phone: link.phone,
-        has_invoice: link.has_invoice === 1,
-        is_completed: link.is_completed === 1
+        has_invoice: link.has_invoice,
+        is_completed: link.is_completed
       }
     });
   } catch (error) {
@@ -297,9 +386,10 @@ app.get('/api/links/:token', (req, res) => {
 // ============================================
 // API: Get all links (admin)
 // ============================================
-app.get('/api/links', (req, res) => {
+app.get('/api/links', async (req, res) => {
   try {
-    const links = db.prepare('SELECT * FROM customer_links ORDER BY created_at DESC').all();
+    const refresh = !!req.query.refresh;
+    const { links } = await getLinks(refresh);
     res.json({ success: true, data: links });
   } catch (error) {
     console.error('Error fetching links:', error);
@@ -310,27 +400,37 @@ app.get('/api/links', (req, res) => {
 // ============================================
 // API: Delete a customer link (admin)
 // ============================================
-app.delete('/api/links/:id', (req, res) => {
+app.delete('/api/links/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // First, find the link to get the invoice filename if exists
-    const link = db.prepare('SELECT * FROM customer_links WHERE id = ?').get(id);
-    if (!link) {
+    const id = parseInt(req.params.id);
+    const { links, sha } = await getLinks(true);
+    const linkIndex = links.findIndex(l => l.id === id);
+
+    if (linkIndex === -1) {
       return res.status(404).json({ success: false, message: 'الرابط غير موجود' });
     }
-    
-    // Delete invoice file from uploads folder if exists
+
+    const link = links[linkIndex];
+
+    // Delete invoice PDF from GitHub if exists
     if (link.has_invoice && link.invoice_filename) {
-      const filePath = path.join(uploadsDir, link.invoice_filename);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+      try {
+        const inv = await readBinaryFromGitHub(`data/invoices/${link.invoice_filename}`);
+        if (inv) {
+          await deleteFromGitHub(
+            `data/invoices/${link.invoice_filename}`,
+            inv.sha,
+            `Delete invoice for ${link.customer_name}`
+          );
+        }
+      } catch (e) {
+        console.error('Could not delete invoice file:', e.message);
       }
     }
-    
-    // Delete from DB
-    db.prepare('DELETE FROM customer_links WHERE id = ?').run(id);
-    
+
+    links.splice(linkIndex, 1);
+    await persistLinks(links, sha);
+
     res.json({ success: true, message: 'تم حذف الرابط والملفات المرتبطة بنجاح' });
   } catch (error) {
     console.error('Error deleting link:', error);
@@ -341,28 +441,21 @@ app.delete('/api/links/:id', (req, res) => {
 // ============================================
 // API: Download invoice (only after survey completion)
 // ============================================
-app.get('/api/invoice/:token', (req, res) => {
+app.get('/api/invoice/:token', async (req, res) => {
   try {
-    const link = db.prepare('SELECT * FROM customer_links WHERE token = ?').get(req.params.token);
+    const { links } = await getLinks();
+    const link = links.find(l => l.token === req.params.token);
 
-    if (!link) {
-      return res.status(404).json({ success: false, message: 'رابط غير صالح' });
-    }
+    if (!link) return res.status(404).json({ success: false, message: 'رابط غير صالح' });
+    if (!link.has_invoice) return res.status(404).json({ success: false, message: 'لا توجد فاتورة مرفقة' });
+    if (!link.is_completed) return res.status(403).json({ success: false, message: 'يجب إكمال الاستبيان أولاً لتحميل الفاتورة' });
 
-    if (!link.has_invoice) {
-      return res.status(404).json({ success: false, message: 'لا توجد فاتورة مرفقة' });
-    }
+    const invoiceData = await readBinaryFromGitHub(`data/invoices/${link.invoice_filename}`);
+    if (!invoiceData) return res.status(404).json({ success: false, message: 'ملف الفاتورة غير موجود' });
 
-    if (!link.is_completed) {
-      return res.status(403).json({ success: false, message: 'يجب إكمال الاستبيان أولاً لتحميل الفاتورة' });
-    }
-
-    const filePath = path.join(uploadsDir, link.invoice_filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: 'ملف الفاتورة غير موجود' });
-    }
-
-    res.download(filePath, link.invoice_original_name || link.invoice_filename);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${link.invoice_original_name || link.invoice_filename}"`);
+    res.send(invoiceData.buffer);
   } catch (error) {
     console.error('Error downloading invoice:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ في تحميل الفاتورة' });
@@ -372,36 +465,45 @@ app.get('/api/invoice/:token', (req, res) => {
 // ============================================
 // API: Submit survey
 // ============================================
-app.post('/api/survey', (req, res) => {
+app.post('/api/survey', async (req, res) => {
   try {
     const { name, phone, purchase_date, source, purchased, emirate, experience, rating, token } = req.body;
 
-    // Validate required fields
     if (!name || !phone || !purchase_date || !source || !purchased || !emirate || !experience || !rating) {
       return res.status(400).json({ success: false, message: 'جميع الحقول المطلوبة يجب ملؤها بما فيها حقل التجربة' });
     }
 
     const couponCode = 'ACC20-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
-    const stmt = db.prepare(`
-      INSERT INTO surveys (name, phone, purchase_date, source, purchased, emirate, experience, rating, token, coupon_code)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const newSurvey = {
+      id: Date.now(),
+      name, phone, purchase_date, source, purchased, emirate, experience,
+      rating: parseInt(rating),
+      token: token || null,
+      coupon_code: couponCode,
+      created_at: new Date().toISOString()
+    };
 
-    const result = stmt.run(name, phone, purchase_date, source, purchased, emirate, experience || '', rating, token || null, couponCode);
+    const { surveys, sha: surveysSha } = await getSurveys(true);
+    surveys.unshift(newSurvey);
+    await persistSurveys(surveys, surveysSha);
 
     // Mark link as completed if token exists
     let hasInvoice = false;
     if (token) {
-      db.prepare('UPDATE customer_links SET is_completed = 1 WHERE token = ?').run(token);
-      const link = db.prepare('SELECT has_invoice FROM customer_links WHERE token = ?').get(token);
-      if (link) hasInvoice = link.has_invoice === 1;
+      const { links, sha: linksSha } = await getLinks(true);
+      const linkIndex = links.findIndex(l => l.token === token);
+      if (linkIndex !== -1) {
+        links[linkIndex].is_completed = true;
+        hasInvoice = links[linkIndex].has_invoice;
+        await persistLinks(links, linksSha);
+      }
     }
 
     res.json({
       success: true,
       message: 'تم إرسال الاستبيان بنجاح!',
-      id: result.lastInsertRowid,
+      id: newSurvey.id,
       coupon: couponCode,
       has_invoice: hasInvoice,
       token: token || null
@@ -413,22 +515,20 @@ app.post('/api/survey', (req, res) => {
 });
 
 // ============================================
-// API: Search survey / customer by coupon code
+// API: Search by coupon code
 // ============================================
-app.get('/api/coupon/:code', (req, res) => {
+app.get('/api/coupon/:code', async (req, res) => {
   try {
     const code = req.params.code.trim().toUpperCase();
-    const query = `
-      SELECT s.*, l.invoice_filename, l.invoice_original_name, l.has_invoice
-      FROM surveys s
-      LEFT JOIN customer_links l ON s.token = l.token
-      WHERE UPPER(s.coupon_code) = ?
-    `;
-    const result = db.prepare(query).get(code);
+    const { surveys } = await getSurveys();
+    const result = surveys.find(s => s.coupon_code && s.coupon_code.toUpperCase() === code);
 
     if (!result) {
       return res.status(404).json({ success: false, message: 'الكوبون غير موجود أو غير صالح' });
     }
+
+    const { links } = await getLinks();
+    const link = result.token ? links.find(l => l.token === result.token) : null;
 
     res.json({
       success: true,
@@ -439,9 +539,9 @@ app.get('/api/coupon/:code', (req, res) => {
         rating: result.rating,
         experience: result.experience,
         purchase_date: result.purchase_date,
-        has_invoice: result.has_invoice === 1,
-        invoice_filename: result.invoice_filename,
-        invoice_original_name: result.invoice_original_name,
+        has_invoice: link ? link.has_invoice : false,
+        invoice_filename: link ? link.invoice_filename : null,
+        invoice_original_name: link ? link.invoice_original_name : null,
         token: result.token,
         created_at: result.created_at
       }
@@ -453,11 +553,12 @@ app.get('/api/coupon/:code', (req, res) => {
 });
 
 // ============================================
-// API: Get all surveys (admin endpoint)
+// API: Get all surveys (admin)
 // ============================================
-app.get('/api/surveys', (req, res) => {
+app.get('/api/surveys', async (req, res) => {
   try {
-    const surveys = db.prepare('SELECT * FROM surveys ORDER BY created_at DESC').all();
+    const refresh = !!req.query.refresh;
+    const { surveys } = await getSurveys(refresh);
     res.json({ success: true, data: surveys, total: surveys.length });
   } catch (error) {
     console.error('Error fetching surveys:', error);
@@ -468,16 +569,18 @@ app.get('/api/surveys', (req, res) => {
 // ============================================
 // API: Delete a survey response (admin)
 // ============================================
-app.delete('/api/surveys/:id', (req, res) => {
+app.delete('/api/surveys/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Delete from DB
-    const result = db.prepare('DELETE FROM surveys WHERE id = ?').run(id);
-    if (result.changes === 0) {
+    const id = parseInt(req.params.id);
+    const { surveys, sha } = await getSurveys(true);
+    const idx = surveys.findIndex(s => s.id === id);
+
+    if (idx === -1) {
       return res.status(404).json({ success: false, message: 'الرد غير موجود' });
     }
-    
+
+    surveys.splice(idx, 1);
+    await persistSurveys(surveys, sha);
     res.json({ success: true, message: 'تم حذف الرد بنجاح' });
   } catch (error) {
     console.error('Error deleting survey:', error);
@@ -488,22 +591,29 @@ app.delete('/api/surveys/:id', (req, res) => {
 // ============================================
 // API: Get survey stats
 // ============================================
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', async (req, res) => {
   try {
-    const total = db.prepare('SELECT COUNT(*) as count FROM surveys').get();
-    const avgRating = db.prepare('SELECT AVG(rating) as avg FROM surveys').get();
-    const bySource = db.prepare('SELECT source, COUNT(*) as count FROM surveys GROUP BY source').all();
-    const byEmirate = db.prepare('SELECT emirate, COUNT(*) as count FROM surveys GROUP BY emirate').all();
-    const purchased = db.prepare("SELECT purchased, COUNT(*) as count FROM surveys GROUP BY purchased").all();
+    const { surveys } = await getSurveys();
+    const total = surveys.length;
+    const avgRating = total > 0
+      ? surveys.reduce((sum, s) => sum + (s.rating || 0), 0) / total
+      : 0;
+
+    const sourceMap = {}, emirateMap = {}, purchasedMap = {};
+    surveys.forEach(s => {
+      sourceMap[s.source]     = (sourceMap[s.source]     || 0) + 1;
+      emirateMap[s.emirate]   = (emirateMap[s.emirate]   || 0) + 1;
+      purchasedMap[s.purchased] = (purchasedMap[s.purchased] || 0) + 1;
+    });
 
     res.json({
       success: true,
       stats: {
-        totalResponses: total.count,
-        averageRating: avgRating.avg ? avgRating.avg.toFixed(1) : 0,
-        bySource,
-        byEmirate,
-        purchased
+        totalResponses: total,
+        averageRating: avgRating ? avgRating.toFixed(1) : 0,
+        bySource:   Object.entries(sourceMap).map(([source, count])     => ({ source, count })),
+        byEmirate:  Object.entries(emirateMap).map(([emirate, count])   => ({ emirate, count })),
+        purchased:  Object.entries(purchasedMap).map(([purchased, count]) => ({ purchased, count }))
       }
     });
   } catch (error) {
@@ -512,47 +622,18 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
-// Serve admin page
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
+// ============================================
+// Serve pages
+// ============================================
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get(['/', '/survey'], (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-// Serve customer survey page at root '/' and '/survey'
-app.get(['/', '/survey'], (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Function to automatically start ngrok tunnel and log public URL
-function startNgrokTunnel(port) {
-  try {
-    const { spawn } = require('child_process');
-    const ngrokBin = path.join(__dirname, 'node_modules', 'ngrok', 'bin', 'ngrok.exe');
-    const isBinAvailable = fs.existsSync(ngrokBin);
-    const spawnCmd = isBinAvailable ? ngrokBin : 'npx';
-    const spawnArgs = isBinAvailable ? ['http', port, '--log=stdout'] : ['ngrok', 'http', port, '--log=stdout'];
-
-    const tunnel = spawn(spawnCmd, spawnArgs, { shell: !isBinAvailable });
-
-    tunnel.stdout.on('data', (data) => {
-      const msg = data.toString();
-      const match = msg.match(/url=(https:\/\/[^\s]+)/);
-      if (match) {
-        console.log('\n===============================================================');
-        console.log('🌐 تم تشغيل ngrok بنجاح! موقعك متاح الآن للجميع خارج الشبكة المحلية:');
-        console.log(`📋 رابط موقع الاستبيان:          ${match[1]}`);
-        console.log(`📊 لوحة تحكم الإدارة:           ${match[1]}/admin`);
-        console.log('===============================================================\n');
-      }
-    });
-  } catch (e) {
-    console.log(`💡 للتشغيل عبر ngrok يدوياً: npx ngrok http ${port}`);
-  }
-}
-
+// ============================================
+// Start server
+// ============================================
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 السيرفر يعمل الآن بنجاح!`);
   console.log(`📋 رابط صفحة الاستبيان:    http://localhost:${PORT}`);
-  console.log(`📊 لوحة تحكم الإدارة:      http://localhost:${PORT}/admin\n`);
-  
-  startNgrokTunnel(PORT);
+  console.log(`📊 لوحة تحكم الإدارة:      http://localhost:${PORT}/admin`);
+  console.log(`💾 التخزين: GitHub API → ${GITHUB_OWNER}/${GITHUB_REPO} (${GITHUB_BRANCH})\n`);
 });
