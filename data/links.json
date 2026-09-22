@@ -7,7 +7,7 @@
     "has_invoice": true,
     "invoice_filename": "invoice_09c2f80b2d80ce84.pdf",
     "invoice_original_name": "عمي احمد.pdf",
-    "is_completed": false,
+    "is_completed": true,
     "created_at": "2026-09-22T08:08:10.613Z"
   }
 ]
