@@ -450,13 +450,11 @@ app.get('/api/invoice/:token', async (req, res) => {
     if (!link) return res.status(404).json({ success: false, message: 'رابط غير صالح' });
     if (!link.has_invoice) return res.status(404).json({ success: false, message: 'لا توجد فاتورة مرفقة' });
     if (!link.is_completed) return res.status(403).json({ success: false, message: 'يجب إكمال الاستبيان أولاً لتحميل الفاتورة' });
+    if (!link.invoice_filename) return res.status(404).json({ success: false, message: 'ملف الفاتورة غير موجود' });
 
-    const invoiceData = await readBinaryFromGitHub(`data/invoices/${link.invoice_filename}`);
-    if (!invoiceData) return res.status(404).json({ success: false, message: 'ملف الفاتورة غير موجود' });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${link.invoice_original_name || link.invoice_filename}"`);
-    res.send(invoiceData.buffer);
+    // Redirect directly to GitHub raw content URL (bypasses Netlify binary proxy corruption)
+    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data/invoices/${link.invoice_filename}`;
+    res.redirect(302, rawUrl);
   } catch (error) {
     console.error('Error downloading invoice:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ في تحميل الفاتورة' });
