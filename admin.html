@@ -941,9 +941,12 @@
     // ========================================
     // Load Customer Links
     // ========================================
+    let _initialLoad = true;
+
     async function loadLinks() {
       try {
-        const res = await fetch('/api/links');
+        const url = _initialLoad ? '/api/links?refresh=1' : '/api/links';
+        const res = await fetch(url);
         const data = await res.json();
         if (data.success) {
           renderLinks(data.data);
@@ -983,7 +986,8 @@
     // ========================================
     async function loadData() {
       try {
-        const surveysRes = await fetch('/api/surveys');
+        const refreshParam = _initialLoad ? '?refresh=1' : '';
+        const surveysRes = await fetch(`/api/surveys${refreshParam}`);
         const surveysData = await surveysRes.json();
 
         const statsRes = await fetch('/api/stats');
@@ -1013,6 +1017,8 @@
         }
       } catch (error) {
         console.error('Error loading data:', error);
+      } finally {
+        _initialLoad = false;
       }
     }
 
