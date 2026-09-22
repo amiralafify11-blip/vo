@@ -594,6 +594,24 @@
           <input type="url" id="setting-maps-url" placeholder="https://maps.app.goo.gl/..." style="direction: ltr; text-align: left;">
         </div>
 
+        <!-- Branch Management -->
+        <div class="full-width" style="margin-top: 10px;">
+          <label style="display:flex; align-items:center; gap:8px;">
+            🏪 فروع المتجر
+            <span style="font-size:0.78rem; font-weight:400; color:var(--text-muted);">(تظهر للعميل في الاستبيان)</span>
+          </label>
+          <div id="branches-list" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; min-height:36px;"></div>
+          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+            <input type="text" id="new-branch-input"
+              placeholder="أدخل اسم الفرع الجديد (مثال: فرع دبي 🇦🇪)"
+              style="flex:1; min-width:180px; padding:10px 14px; background:rgba(255,255,255,0.8); border:1.5px solid rgba(0,0,0,0.08); border-radius:var(--radius-md); font-family:'Cairo',sans-serif; font-size:0.88rem; direction:rtl; outline:none;"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
+            <button class="generate-btn" onclick="addBranch()" style="padding:10px 18px; font-size:0.88rem; background:linear-gradient(135deg,#10b981,#059669);">
+              + إضافة فرع
+            </button>
+          </div>
+        </div>
+
         <!-- Live WhatsApp Preview Box -->
         <div class="full-width" style="margin-top: 12px; background: #eef2f5; padding: 18px; border-radius: 12px; border: 1px solid #d1d7db;">
           <div style="font-size: 0.85rem; font-weight: 700; color: #128c7e; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
@@ -687,12 +705,13 @@
             <th>الاسم</th>
             <th>الهاتف</th>
             <th>تاريخ الشراء</th>
+            <th>الفرع</th>
             <th>المصدر</th>
             <th>تم الشراء</th>
             <th>الإمارة</th>
             <th>التقييم</th>
             <th>الكوبون</th>
-            <th>التجربة</th>
+            <th>التجربة / الصوت</th>
             <th>التاريخ</th>
             <th>الإجراءات</th>
           </tr>
@@ -1036,12 +1055,20 @@
           <td>${escapeHtml(row.name)}</td>
           <td style="direction:ltr;text-align:right;">${escapeHtml(row.phone)}</td>
           <td>${row.purchase_date}</td>
+          <td style="font-size:0.8rem;">${escapeHtml(row.branch || '-')}</td>
           <td>${escapeHtml(row.source)}</td>
           <td><span class="badge ${row.purchased === 'نعم' ? 'yes' : 'no'}">${escapeHtml(row.purchased)}</span></td>
           <td>${escapeHtml(row.emirate)}</td>
           <td><span class="stars">${'★'.repeat(row.rating)}${'☆'.repeat(5 - row.rating)}</span></td>
           <td style="font-family:monospace;font-weight:600;color:var(--accent-purple);">${escapeHtml(row.coupon_code || '-')}</td>
-          <td title="${escapeHtml(row.experience)}">${escapeHtml((row.experience || '').substring(0, 40))}${(row.experience || '').length > 40 ? '...' : ''}</td>
+          <td>
+            ${row.audio_filename
+              ? `<button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#8b5cf6;" onclick="playAudioRecording(${row.id})">🎵 استماع</button>`
+              : ''
+            }
+            ${row.experience ? `<span title="${escapeHtml(row.experience)}" style="font-size:0.8rem;">${escapeHtml(row.experience.substring(0, 30))}${row.experience.length > 30 ? '...' : ''}</span>` : ''}
+            ${!row.audio_filename && !row.experience ? '<span style="color:var(--text-muted);">-</span>' : ''}
+          </td>
           <td style="font-size:0.78rem;color:var(--text-muted);">${new Date(row.created_at).toLocaleDateString('ar-AE')}</td>
           <td>
             <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#f43f5e;" onclick="deleteSurvey(${row.id})">🗑️ حذف</button>
@@ -1104,6 +1131,41 @@
     loadSettingsAdmin();
 
     // ========================================
+    // Branch Management
+    // ========================================
+    let currentBranches = [];
+
+    function renderBranchesList(branches) {
+      currentBranches = branches || [];
+      const container = document.getElementById('branches-list');
+      if (!currentBranches.length) {
+        container.innerHTML = '<span style="font-size:0.82rem;color:var(--text-muted);">لا توجد فروع بعد - أضف فرعاً أدناه</span>';
+        return;
+      }
+      container.innerHTML = currentBranches.map((b, i) => `
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);border-radius:20px;padding:5px 12px;">
+          <span style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">🏪 ${escapeHtml(b)}</span>
+          <button onclick="removeBranch(${i})" style="background:none;border:none;cursor:pointer;font-size:0.9rem;color:#f43f5e;padding:0 2px;" title="حذف">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function addBranch() {
+      const input = document.getElementById('new-branch-input');
+      const name = input.value.trim();
+      if (!name) return;
+      if (currentBranches.includes(name)) { alert('هذا الفرع موجود بالفعل'); return; }
+      currentBranches.push(name);
+      renderBranchesList(currentBranches);
+      input.value = '';
+    }
+
+    function removeBranch(index) {
+      currentBranches.splice(index, 1);
+      renderBranchesList(currentBranches);
+    }
+
+    // ========================================
     // Settings & Customization Logic
     // ========================================
     function updateWhatsAppPreview() {
@@ -1129,6 +1191,13 @@
         document.getElementById('setting-coupon-desc').value = s.coupon_desc || '';
         document.getElementById('setting-maps-url').value = s.maps_url || '';
 
+        try {
+          const branches = s.branches ? JSON.parse(s.branches) : [];
+          renderBranchesList(branches);
+        } catch (e) {
+          renderBranchesList([]);
+        }
+
         updateWhatsAppPreview();
       } catch (e) {
         console.error('Error loading settings:', e);
@@ -1151,7 +1220,8 @@
         welcome_desc: document.getElementById('setting-welcome-desc').value.trim(),
         discount_text: document.getElementById('setting-discount-text').value.trim(),
         coupon_desc: document.getElementById('setting-coupon-desc').value.trim(),
-        maps_url: document.getElementById('setting-maps-url').value.trim()
+        maps_url: document.getElementById('setting-maps-url').value.trim(),
+        branches: JSON.stringify(currentBranches)
       };
 
       try {
@@ -1180,6 +1250,34 @@
         btn.textContent = '💾 حفظ التعديلات';
         setTimeout(() => { status.style.display = 'none'; }, 4000);
       }
+    }
+
+    // ========================================
+    // Play Audio Recording
+    // ========================================
+    function playAudioRecording(surveyId) {
+      const existing = document.getElementById('admin-audio-player');
+      if (existing) existing.remove();
+
+      const audio = document.createElement('audio');
+      audio.id = 'admin-audio-player';
+      audio.controls = true;
+      audio.autoplay = true;
+      audio.src = `/api/recordings/${surveyId}`;
+      audio.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:white;padding:10px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.2);width:320px;';
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'position:absolute;top:-10px;left:-10px;background:#ef4444;color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:0.8rem;';
+      closeBtn.onclick = () => audio.remove();
+
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;';
+      wrapper.appendChild(closeBtn);
+      wrapper.appendChild(audio);
+      document.body.appendChild(wrapper);
+
+      audio.onerror = () => { alert('تعذر تحميل التسجيل الصوتي'); wrapper.remove(); };
     }
 
     // Auto-refresh every 30 seconds
