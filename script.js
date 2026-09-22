@@ -2,8 +2,13 @@
 // Survey Form Logic
 // ========================================
 
-// Global token variable
 let currentToken = null;
+let audioBlob = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let recordingTimerInterval = null;
+let recordingSeconds = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
@@ -14,6 +19,101 @@ document.addEventListener('DOMContentLoaded', () => {
   setMaxDate();
   checkForToken();
 });
+
+// ========================================
+// 🔊 Text-to-Speech
+// ========================================
+function speakText(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ar-AE';
+  utterance.rate = 0.85;
+  utterance.pitch = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
+// ========================================
+// 🎤 Voice Recording
+// ========================================
+async function toggleRecording() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const url = URL.createObjectURL(audioBlob);
+      const audio = document.getElementById('playback-audio');
+      audio.src = url;
+      audio.style.display = 'block';
+
+      const statusEl = document.getElementById('record-status');
+      statusEl.className = 'record-status done';
+      statusEl.textContent = '✅ تم التسجيل - اضغط للاستماع أو أعد التسجيل';
+
+      const btn = document.getElementById('record-btn');
+      btn.className = 'record-btn';
+      btn.innerHTML = '🔄 إعادة التسجيل';
+    };
+
+    mediaRecorder.start(100);
+    isRecording = true;
+
+    const btn = document.getElementById('record-btn');
+    btn.className = 'record-btn recording';
+    btn.innerHTML = '⏹️ إيقاف التسجيل';
+
+    const statusEl = document.getElementById('record-status');
+    statusEl.className = 'record-status active';
+    statusEl.textContent = '🔴 جاري التسجيل...';
+
+    // Timer
+    recordingSeconds = 0;
+    const timerEl = document.getElementById('recording-timer');
+    timerEl.style.display = 'inline';
+    recordingTimerInterval = setInterval(() => {
+      recordingSeconds++;
+      const m = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+      const s = (recordingSeconds % 60).toString().padStart(2, '0');
+      timerEl.textContent = `${m}:${s}`;
+      if (recordingSeconds >= 120) stopRecording(); // max 2 min
+    }, 1000);
+
+  } catch (err) {
+    console.error('Microphone error:', err);
+    const statusEl = document.getElementById('record-status');
+    statusEl.className = 'record-status';
+    statusEl.textContent = '❌ تعذر الوصول للميكروفون - اكتب يدوياً';
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  clearInterval(recordingTimerInterval);
+  document.getElementById('recording-timer').style.display = 'none';
+  isRecording = false;
+}
 
 // ========================================
 // Dynamic Settings Loader
@@ -60,10 +160,45 @@ async function loadSettings() {
       const el = document.getElementById('maps-link');
       if (el) el.href = s.maps_url;
     }
+    // Load branches
+    if (s.branches) {
+      try {
+        const branches = JSON.parse(s.branches);
+        renderBranches(branches);
+      } catch (e) {}
+    }
   } catch (e) {
     console.error('Error loading settings:', e);
   }
 }
+
+// ========================================
+// Render Branch Options
+// ========================================
+function renderBranches(branches) {
+  const container = document.getElementById('branch-options');
+  const section = document.getElementById('branch-section');
+  if (!branches || branches.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  container.innerHTML = branches.map(branch => `
+    <label class="option-card">
+      <input type="radio" name="branch" value="${branch.replace(/"/g, '&quot;')}">
+      <span class="option-label">
+        <span class="option-icon">🏪</span>
+        ${branch}
+      </span>
+    </label>
+  `).join('');
+  // Attach progress listener to branch radios
+  container.querySelectorAll('input[type=radio]').forEach(r => {
+    r.addEventListener('change', updateProgressExternal);
+  });
+}
+
+let updateProgressExternal = () => {};
 
 // ========================================
 // Token Detection & Link Info
@@ -78,12 +213,10 @@ async function checkForToken() {
   try {
     const res = await fetch(`/api/links/${token}`);
     const data = await res.json();
-
     if (!data.success) return;
 
     const info = data.data;
 
-    // If survey already completed for this token, show success directly
     if (info.is_completed) {
       document.getElementById('survey-form').style.display = 'none';
       document.getElementById('progress-container').style.display = 'none';
@@ -99,15 +232,9 @@ async function checkForToken() {
       return;
     }
 
-    // Pre-fill name and phone
-    if (info.customer_name) {
-      document.getElementById('name').value = info.customer_name;
-    }
-    if (info.phone) {
-      document.getElementById('phone').value = info.phone;
-    }
+    if (info.customer_name) document.getElementById('name').value = info.customer_name;
+    if (info.phone) document.getElementById('phone').value = info.phone;
 
-    // Show notice if invoice is attached
     if (info.has_invoice) {
       const header = document.getElementById('survey-header');
       const notice = document.createElement('div');
@@ -124,8 +251,7 @@ async function checkForToken() {
 function setMaxDate() {
   const dateInput = document.getElementById('purchase-date');
   if (dateInput) {
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('max', today);
+    dateInput.setAttribute('max', new Date().toISOString().split('T')[0]);
   }
 }
 
@@ -145,7 +271,7 @@ function initDatePresets() {
       } else {
         customDateContainer.style.display = 'none';
         customDateInput.removeAttribute('required');
-        customDateInput.value = ''; // Reset custom date value
+        customDateInput.value = '';
       }
     });
   });
@@ -155,20 +281,18 @@ function initDatePresets() {
 // Progress Tracker
 // ========================================
 function initProgressTracker() {
-  const fields = ['name', 'phone', 'experience'];
+  const textFields = ['name', 'phone'];
   const radioGroups = ['purchased', 'source', 'rating'];
   const select = document.getElementById('emirate');
 
   function updateProgress() {
     let filled = 0;
-    const total = 8; // Total required fields
+    let total = 7; // base fields
 
-    // Text inputs
-    fields.forEach(id => {
+    textFields.forEach(id => {
       if (document.getElementById(id).value.trim()) filled++;
     });
 
-    // Date Preset check
     const datePresetChecked = document.querySelector('input[name="date_preset"]:checked');
     if (datePresetChecked) {
       if (datePresetChecked.value === 'custom') {
@@ -178,53 +302,57 @@ function initProgressTracker() {
       }
     }
 
-    // Radio groups
     radioGroups.forEach(name => {
       if (document.querySelector(`input[name="${name}"]:checked`)) filled++;
     });
 
-    // Select
     if (select.value) filled++;
+
+    // Experience: text or audio
+    const hasText = document.getElementById('experience').value.trim();
+    const hasAudio = !!audioBlob;
+    if (hasText || hasAudio) filled++;
+
+    // Branch (if visible)
+    const branchSection = document.getElementById('branch-section');
+    if (branchSection.style.display !== 'none') {
+      total++;
+      if (document.querySelector('input[name="branch"]:checked')) filled++;
+    }
 
     const percent = Math.round((filled / total) * 100);
     document.getElementById('progress-fill').style.width = percent + '%';
     document.getElementById('progress-label').textContent = percent + '% مكتمل';
-
     const step = Math.min(filled + 1, total);
     document.getElementById('progress-step').textContent = `الخطوة ${step} من ${total}`;
   }
 
-  // Attach listeners
-  fields.forEach(id => {
+  updateProgressExternal = updateProgress;
+
+  textFields.forEach(id => {
     document.getElementById(id).addEventListener('input', updateProgress);
   });
-
-  document.querySelectorAll('input[name="date_preset"]').forEach(radio => {
-    radio.addEventListener('change', updateProgress);
-  });
+  document.getElementById('experience').addEventListener('input', updateProgress);
+  document.querySelectorAll('input[name="date_preset"]').forEach(r => r.addEventListener('change', updateProgress));
   document.getElementById('purchase-date').addEventListener('change', updateProgress);
-
   radioGroups.forEach(name => {
-    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
-      radio.addEventListener('change', updateProgress);
-    });
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => r.addEventListener('change', updateProgress));
   });
-
   select.addEventListener('change', updateProgress);
+
+  // Watch audio blob changes
+  const origToggle = window.toggleRecording;
+  window.toggleRecording = async function() {
+    await origToggle ? origToggle() : toggleRecording();
+    setTimeout(updateProgress, 500);
+  };
 }
 
 // ========================================
 // Star Rating
 // ========================================
 function initStarRating() {
-  const ratingTexts = {
-    1: '😞 ضعيف',
-    2: '😐 مقبول',
-    3: '🙂 جيد',
-    4: '😊 جيد جداً',
-    5: '🤩 ممتاز!'
-  };
-
+  const ratingTexts = { 1: '😞 ضعيف', 2: '😐 مقبول', 3: '🙂 جيد', 4: '😊 جيد جداً', 5: '🤩 ممتاز!' };
   document.querySelectorAll('.star-rating input').forEach(input => {
     input.addEventListener('change', () => {
       const value = parseInt(input.value);
@@ -243,18 +371,12 @@ function initForm() {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    // Clear previous errors
     clearErrors();
-
-    // Validate
     if (!validateForm()) return;
 
-    // Show loading
     submitBtn.classList.add('loading');
     submitBtn.disabled = true;
 
-    // Collect data
     const data = {
       name: document.getElementById('name').value.trim(),
       phone: document.getElementById('phone').value.trim(),
@@ -264,8 +386,12 @@ function initForm() {
       emirate: document.getElementById('emirate').value,
       experience: document.getElementById('experience').value.trim(),
       rating: parseInt(document.querySelector('input[name="rating"]:checked').value),
-      token: currentToken
+      token: currentToken,
+      has_audio: !!audioBlob
     };
+
+    const branchChecked = document.querySelector('input[name="branch"]:checked');
+    if (branchChecked) data.branch = branchChecked.value;
 
     try {
       const response = await fetch('/api/survey', {
@@ -273,10 +399,19 @@ function initForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-
       const result = await response.json();
 
       if (result.success) {
+        // Upload audio if recorded
+        if (audioBlob && result.id) {
+          try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+            await fetch(`/api/recordings/${result.id}`, { method: 'POST', body: formData });
+          } catch (audioErr) {
+            console.error('Audio upload failed:', audioErr);
+          }
+        }
         showSuccess(result.coupon, result.has_invoice, result.token);
       } else {
         showToast(result.message || 'حدث خطأ، يرجى المحاولة مرة أخرى', 'error');
@@ -284,7 +419,7 @@ function initForm() {
         submitBtn.disabled = false;
       }
     } catch (error) {
-      showToast('خطأ في الاتصال بالخادم، تأكد من اتصالك بالإنترنت', 'error');
+      showToast('خطأ في الاتصال بالخادم', 'error');
       submitBtn.classList.remove('loading');
       submitBtn.disabled = false;
     }
@@ -294,18 +429,14 @@ function initForm() {
 function getSelectedDate() {
   const preset = document.querySelector('input[name="date_preset"]:checked');
   if (!preset) return '';
-
   const today = new Date();
-  if (preset.value === 'today') {
-    return today.toISOString().split('T')[0];
-  } else if (preset.value === 'yesterday') {
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
-  } else if (preset.value === 'custom') {
-    return document.getElementById('purchase-date').value;
+  if (preset.value === 'today') return today.toISOString().split('T')[0];
+  if (preset.value === 'yesterday') {
+    const y = new Date(today);
+    y.setDate(today.getDate() - 1);
+    return y.toISOString().split('T')[0];
   }
-  return '';
+  return document.getElementById('purchase-date').value;
 }
 
 // ========================================
@@ -314,81 +445,64 @@ function getSelectedDate() {
 function validateForm() {
   let isValid = true;
 
-  // Name
   const name = document.getElementById('name');
-  if (!name.value.trim()) {
-    showError('name', 'name-error');
-    isValid = false;
-  }
+  if (!name.value.trim()) { showError('name', 'name-error'); isValid = false; }
 
-  // Phone
   const phone = document.getElementById('phone');
-  const phoneRegex = /^[\d\s\+\-()]{7,15}$/;
-  if (!phone.value.trim() || !phoneRegex.test(phone.value.trim())) {
-    showError('phone', 'phone-error');
-    isValid = false;
+  if (!phone.value.trim() || !/^[\d\s\+\-()]{7,15}$/.test(phone.value.trim())) {
+    showError('phone', 'phone-error'); isValid = false;
   }
 
   // Date
   const datePresetChecked = document.querySelector('input[name="date_preset"]:checked');
   if (!datePresetChecked) {
-    document.getElementById('date-error').classList.add('show');
-    isValid = false;
-  } else if (datePresetChecked.value === 'custom') {
-    const dateInput = document.getElementById('purchase-date');
-    if (!dateInput.value) {
-      showError('purchase-date', 'date-error');
-      isValid = false;
+    document.getElementById('date-error').classList.add('show'); isValid = false;
+  } else if (datePresetChecked.value === 'custom' && !document.getElementById('purchase-date').value) {
+    showError('purchase-date', 'date-error'); isValid = false;
+  }
+
+  // Branch (if visible)
+  const branchSection = document.getElementById('branch-section');
+  if (branchSection.style.display !== 'none') {
+    if (!document.querySelector('input[name="branch"]:checked')) {
+      document.getElementById('branch-error').classList.add('show'); isValid = false;
     }
   }
 
-  // Purchased
   if (!document.querySelector('input[name="purchased"]:checked')) {
-    document.getElementById('purchased-error').classList.add('show');
-    isValid = false;
+    document.getElementById('purchased-error').classList.add('show'); isValid = false;
   }
-
-  // Source
   if (!document.querySelector('input[name="source"]:checked')) {
-    document.getElementById('source-error').classList.add('show');
-    isValid = false;
+    document.getElementById('source-error').classList.add('show'); isValid = false;
+  }
+  if (!document.getElementById('emirate').value) {
+    showError('emirate', 'emirate-error'); isValid = false;
   }
 
-  // Emirate
-  const emirate = document.getElementById('emirate');
-  if (!emirate.value) {
-    showError('emirate', 'emirate-error');
-    isValid = false;
+  // Experience: text OR audio
+  const hasText = document.getElementById('experience').value.trim();
+  const hasAudio = !!audioBlob;
+  if (!hasText && !hasAudio) {
+    showError('experience', 'experience-error'); isValid = false;
   }
 
-  // Experience
-  const experience = document.getElementById('experience');
-  if (!experience.value.trim()) {
-    showError('experience', 'experience-error');
-    isValid = false;
-  }
-
-  // Rating
   if (!document.querySelector('input[name="rating"]:checked')) {
-    document.getElementById('rating-error').classList.add('show');
-    isValid = false;
+    document.getElementById('rating-error').classList.add('show'); isValid = false;
   }
 
   if (!isValid) {
     showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
-    // Scroll to first error
     const firstError = document.querySelector('.form-input.error, .error-message.show');
-    if (firstError) {
-      firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-
   return isValid;
 }
 
 function showError(inputId, errorId) {
-  document.getElementById(inputId).classList.add('error');
-  document.getElementById(errorId).classList.add('show');
+  const inp = document.getElementById(inputId);
+  if (inp) inp.classList.add('error');
+  const err = document.getElementById(errorId);
+  if (err) err.classList.add('show');
 }
 
 function clearErrors() {
@@ -400,27 +514,17 @@ function clearErrors() {
 // Success Screen
 // ========================================
 function showSuccess(couponCode, hasInvoice, token) {
-  // Hide form and progress
   document.getElementById('survey-form').style.display = 'none';
   document.getElementById('progress-container').style.display = 'none';
-
-  // Update coupon code
   document.getElementById('coupon-value').textContent = couponCode;
 
-  // Show invoice download if available
   if (hasInvoice && token) {
     document.getElementById('invoice-card').style.display = 'block';
     document.getElementById('invoice-download-btn').href = `/api/invoice/${token}`;
   }
 
-  // Show success
-  const successScreen = document.getElementById('success-screen');
-  successScreen.classList.add('show');
-
-  // Scroll to top
+  document.getElementById('success-screen').classList.add('show');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Launch confetti
   launchConfetti();
 }
 
@@ -430,41 +534,33 @@ function showSuccess(couponCode, hasInvoice, token) {
 function copyCoupon() {
   const code = document.getElementById('coupon-value').textContent;
   navigator.clipboard.writeText(code).then(() => {
-    const tooltip = document.getElementById('copy-tooltip');
-    tooltip.classList.add('show');
-    setTimeout(() => tooltip.classList.remove('show'), 2000);
+    document.getElementById('copy-tooltip').classList.add('show');
+    setTimeout(() => document.getElementById('copy-tooltip').classList.remove('show'), 2000);
     showToast('تم نسخ كود الخصم! 📋', 'success');
   }).catch(() => {
-    // Fallback
-    const textarea = document.createElement('textarea');
-    textarea.value = code;
-    document.body.appendChild(textarea);
-    textarea.select();
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    document.body.appendChild(ta);
+    ta.select();
     document.execCommand('copy');
-    document.body.removeChild(textarea);
+    document.body.removeChild(ta);
     showToast('تم نسخ كود الخصم! 📋', 'success');
   });
 }
 
 // ========================================
-// Toast Notification
+// Toast
 // ========================================
 function showToast(message, type = '') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
   toast.className = 'toast ' + type;
-
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
-  });
-
-  setTimeout(() => {
-    toast.classList.remove('show');
-  }, 3500);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
 // ========================================
-// Confetti Animation
+// Confetti
 // ========================================
 function launchConfetti() {
   const canvas = document.getElementById('confetti-canvas');
@@ -490,24 +586,15 @@ function launchConfetti() {
   }
 
   let animationFrame;
-
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let activeParticles = 0;
-
+    let active = 0;
     particles.forEach(p => {
       if (p.opacity <= 0) return;
-      activeParticles++;
-
-      p.x += p.speedX;
-      p.y += p.speedY;
-      p.rotation += p.rotationSpeed;
-      p.speedY += 0.05;
-
-      if (p.y > canvas.height * 0.7) {
-        p.opacity -= 0.02;
-      }
-
+      active++;
+      p.x += p.speedX; p.y += p.speedY;
+      p.rotation += p.rotationSpeed; p.speedY += 0.05;
+      if (p.y > canvas.height * 0.7) p.opacity -= 0.02;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate((p.rotation * Math.PI) / 180);
@@ -516,32 +603,15 @@ function launchConfetti() {
       ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
       ctx.restore();
     });
-
-    if (activeParticles > 0) {
-      animationFrame = requestAnimationFrame(animate);
-    } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      cancelAnimationFrame(animationFrame);
-    }
+    if (active > 0) animationFrame = requestAnimationFrame(animate);
+    else { ctx.clearRect(0, 0, canvas.width, canvas.height); cancelAnimationFrame(animationFrame); }
   }
-
   animate();
-
-  // Resize handler
-  window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  });
+  window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 }
 
-// Remove focus from inputs on Enter
 document.querySelectorAll('.form-input').forEach(input => {
   if (input.tagName !== 'TEXTAREA') {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        input.blur();
-      }
-    });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
   }
 });
