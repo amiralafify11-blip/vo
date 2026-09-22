@@ -36,7 +36,8 @@ const defaultSettings = {
   welcome_desc:  'شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!',
   discount_text: 'خصم 20%',
   coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
-  maps_url:      'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6'
+  maps_url:      'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6',
+  branches:      JSON.stringify(['فرع الشارقة 🇦🇪'])
 };
 
 // Middleware
@@ -467,17 +468,23 @@ app.get('/api/invoice/:token', async (req, res) => {
 // ============================================
 app.post('/api/survey', async (req, res) => {
   try {
-    const { name, phone, purchase_date, source, purchased, emirate, experience, rating, token } = req.body;
+    const { name, phone, purchase_date, source, purchased, emirate, experience, rating, token, branch } = req.body;
 
-    if (!name || !phone || !purchase_date || !source || !purchased || !emirate || !experience || !rating) {
-      return res.status(400).json({ success: false, message: 'جميع الحقول المطلوبة يجب ملؤها بما فيها حقل التجربة' });
+    if (!name || !phone || !purchase_date || !source || !purchased || !emirate || !rating) {
+      return res.status(400).json({ success: false, message: 'جميع الحقول المطلوبة يجب ملؤها' });
+    }
+    if (!experience && !req.body.has_audio) {
+      return res.status(400).json({ success: false, message: 'يرجى كتابة تجربتك أو تسجيل ملاحظة صوتية' });
     }
 
     const couponCode = 'ACC20-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
     const newSurvey = {
       id: Date.now(),
-      name, phone, purchase_date, source, purchased, emirate, experience,
+      name, phone, purchase_date, source, purchased, emirate,
+      branch: branch || null,
+      experience: experience || '',
+      audio_filename: null,
       rating: parseInt(rating),
       token: token || null,
       coupon_code: couponCode,
@@ -511,6 +518,59 @@ app.post('/api/survey', async (req, res) => {
   } catch (error) {
     console.error('Error saving survey:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ في حفظ البيانات' });
+  }
+});
+
+// ============================================
+// API: Upload audio recording for a survey
+// ============================================
+app.post('/api/recordings/:surveyId', multerFree, async (req, res) => {
+  try {
+    const surveyId = parseInt(req.params.surveyId);
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'لا يوجد ملف صوتي' });
+    }
+
+    const audioFilename = `rec_${surveyId}.webm`;
+    await writeBinaryToGitHub(
+      `data/recordings/${audioFilename}`,
+      req.file.buffer,
+      null,
+      `Upload audio recording for survey ${surveyId}`
+    );
+
+    // Update survey record with audio_filename
+    const { surveys, sha } = await getSurveys(true);
+    const idx = surveys.findIndex(s => s.id === surveyId);
+    if (idx !== -1) {
+      surveys[idx].audio_filename = audioFilename;
+      await persistSurveys(surveys, sha);
+    }
+
+    res.json({ success: true, filename: audioFilename });
+  } catch (error) {
+    console.error('Error uploading recording:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ في رفع التسجيل' });
+  }
+});
+
+// ============================================
+// API: Get audio recording
+// ============================================
+app.get('/api/recordings/:surveyId', async (req, res) => {
+  try {
+    const surveyId = req.params.surveyId;
+    const audioFilename = `rec_${surveyId}.webm`;
+    const audioData = await readBinaryFromGitHub(`data/recordings/${audioFilename}`);
+    if (!audioData) {
+      return res.status(404).json({ success: false, message: 'التسجيل غير موجود' });
+    }
+    res.setHeader('Content-Type', 'audio/webm');
+    res.setHeader('Content-Disposition', `inline; filename="${audioFilename}"`);
+    res.send(audioData.buffer);
+  } catch (error) {
+    console.error('Error fetching recording:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ في جلب التسجيل' });
   }
 });
 
