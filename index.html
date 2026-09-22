@@ -9,6 +9,106 @@
   <meta property="og:type" content="website">
   <title id="page-title">استبيان رضا العملاء - أمير العفيفي للهواتف</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* TTS Button */
+    .tts-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: background 0.2s;
+      opacity: 0.7;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    .tts-btn:hover { background: rgba(139,92,246,0.12); opacity: 1; }
+
+    /* Voice Recording */
+    .recording-area {
+      margin-top: 14px;
+      padding: 16px;
+      background: rgba(139,92,246,0.05);
+      border: 1.5px dashed rgba(139,92,246,0.25);
+      border-radius: 12px;
+    }
+    .recording-label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .record-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .record-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .record-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(139,92,246,0.4); }
+    .record-btn.recording {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      animation: pulse-record 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-record {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    }
+    .record-status {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .record-status.active { color: #ef4444; }
+    .record-status.done { color: #10b981; }
+    #playback-audio {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    .or-divider {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin: 12px 0 8px;
+      position: relative;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: var(--border-glass);
+    }
+    .or-divider::before { right: 0; }
+    .or-divider::after { left: 0; }
+    #recording-timer {
+      font-size: 0.8rem;
+      color: #ef4444;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
 </head>
 <body>
 
@@ -39,7 +139,7 @@
       </div>
       <div class="progress-text">
         <span id="progress-label">0% مكتمل</span>
-        <span id="progress-step">الخطوة 1 من 6</span>
+        <span id="progress-step">الخطوة 1 من 8</span>
       </div>
     </div>
 
@@ -70,9 +170,18 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon blue">🛒</span>
+          <button type="button" class="tts-btn" onclick="speakText('تفاصيل الشراء')" title="استمع">🔊</button>
           <span>تفاصيل الشراء</span>
         </div>
-        <div class="form-group">
+
+        <!-- Branch selection (loaded dynamically from settings) -->
+        <div class="form-group" id="branch-section" style="display:none;">
+          <label><span class="required">*</span> اختر الفرع</label>
+          <div class="options-grid" id="branch-options"></div>
+          <div class="error-message" id="branch-error">يرجى اختيار الفرع</div>
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
           <label><span class="required">*</span> تاريخ الشراء</label>
           <div class="options-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 10px;">
             <label class="option-card">
@@ -99,6 +208,7 @@
           </div>
           <div class="error-message" id="date-error">يرجى اختيار تاريخ الشراء</div>
         </div>
+
         <div class="form-group" style="margin-top: 18px;">
           <label><span class="required">*</span> هل تم الشراء؟</label>
           <div class="options-grid">
@@ -125,6 +235,7 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon gold">📢</span>
+          <button type="button" class="tts-btn" onclick="speakText('كيف عرفت عنا؟')" title="استمع">🔊</button>
           <span>كيف عرفت عنا؟</span>
         </div>
         <div class="options-grid">
@@ -171,6 +282,7 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon emerald">📍</span>
+          <button type="button" class="tts-btn" onclick="speakText('الإمارة')" title="استمع">🔊</button>
           <span>الإمارة</span>
         </div>
         <div class="form-group">
@@ -193,12 +305,30 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon rose">💬</span>
+          <button type="button" class="tts-btn" onclick="speakText('تجربتك مع الموظفين')" title="استمع">🔊</button>
           <span>تجربتك مع الموظفين</span>
         </div>
+
+        <!-- Voice Recording -->
+        <div class="recording-area">
+          <div class="recording-label">🎤 سجّل ملاحظتك الصوتية (أو اكتب في الأسفل)</div>
+          <div class="record-controls">
+            <button type="button" class="record-btn" id="record-btn" onclick="toggleRecording()">
+              🎤 ابدأ التسجيل
+            </button>
+            <span class="record-status" id="record-status">اضغط للتسجيل</span>
+            <span id="recording-timer" style="display:none;"></span>
+          </div>
+          <audio id="playback-audio" controls></audio>
+        </div>
+
+        <div class="or-divider">أو اكتب</div>
+
         <div class="form-group">
-          <label for="experience"><span class="required">*</span> تجربتك مع الموظفين</label>
-          <textarea id="experience" name="experience" class="form-input" placeholder="أخبرنا عن تجربتك مع موظفينا... كيف كان الاستقبال؟ هل ساعدوك في الاختيار؟" rows="4" required></textarea>
-          <div class="error-message" id="experience-error">يرجى إدخال تجربتك مع الموظفين</div>
+          <textarea id="experience" name="experience" class="form-input"
+            placeholder="أخبرنا عن تجربتك مع موظفينا... (اختياري إذا سجّلت صوتاً)"
+            rows="4"></textarea>
+          <div class="error-message" id="experience-error">يرجى كتابة تجربتك أو تسجيل ملاحظة صوتية</div>
         </div>
       </div>
 
@@ -206,6 +336,7 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon gold">⭐</span>
+          <button type="button" class="tts-btn" onclick="speakText('تقييم المحل')" title="استمع">🔊</button>
           <span>تقييم المحل</span>
         </div>
         <div class="form-group">
@@ -255,7 +386,7 @@
         </div>
       </div>
 
-      <!-- Invoice Download (hidden by default, shown if token has invoice) -->
+      <!-- Invoice Download -->
       <div class="maps-card" id="invoice-card" style="display: none;">
         <div class="maps-header">
           <div class="maps-icon" style="background: #d1fae5;">🧾</div>
