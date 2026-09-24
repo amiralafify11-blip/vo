@@ -810,13 +810,68 @@
       }
     });
 
+    // ========================================
+    // Advanced Arabic PDF Normalizer
+    // ========================================
+    function normalizeArabicText(str) {
+      if (!str) return '';
+      // Map Arabic Presentation Forms-A and B (FE80-FEFC, FB50-FDFF) to standard Arabic Unicode (0600-06FF)
+      const formsMap = {
+        '\uFE80': '\u0621', '\uFE81': '\u0622', '\uFE82': '\u0622', '\uFE83': '\u0623', '\uFE84': '\u0623',
+        '\uFE85': '\u0624', '\uFE86': '\u0624', '\uFE87': '\u0625', '\uFE88': '\u0625', '\uFE89': '\u0626',
+        '\uFE8A': '\u0626', '\uFE8B': '\u0626', '\uFE8C': '\u0626', '\uFE8D': '\u0627', '\uFE8E': '\u0627',
+        '\uFE8F': '\u0628', '\uFE90': '\u0628', '\uFE91': '\u0628', '\uFE92': '\u0628', '\uFE93': '\u0629',
+        '\uFE94': '\u0629', '\uFE95': '\u062A', '\uFE96': '\u062A', '\uFE97': '\u062A', '\uFE98': '\u062A',
+        '\uFE99': '\u062B', '\uFE9A': '\u062B', '\uFE9B': '\u062B', '\uFE9C': '\u062B', '\uFE9D': '\u062C',
+        '\uFE9E': '\u062C', '\uFE9F': '\u062C', '\uFEA0': '\u062C', '\uFEA1': '\u062D', '\uFEA2': '\u062D',
+        '\uFEA3': '\u062D', '\uFEA4': '\u062D', '\uFEA5': '\u062E', '\uFEA6': '\u062E', '\uFEA7': '\u062E',
+        '\uFEA8': '\u062E', '\uFEA9': '\u062F', '\uFEAA': '\u062F', '\uFEAB': '\u0630', '\uFEAC': '\u0630',
+        '\uFEAD': '\u0631', '\uFEAE': '\u0631', '\uFEAF': '\u0632', '\uFEB0': '\u0632', '\uFEB1': '\u0633',
+        '\uFEB2': '\u0633', '\uFEB3': '\u0633', '\uFEB4': '\u0633', '\uFEB5': '\u0634', '\uFEB6': '\u0634',
+        '\uFEB7': '\u0634', '\uFEB8': '\u0634', '\uFEB9': '\u0635', '\uFEBA': '\u0635', '\uFEBB': '\u0635',
+        '\uFEBC': '\u0635', '\uFEBD': '\u0636', '\uFEBE': '\u0636', '\uFEBF': '\u0636', '\uFEC0': '\u0636',
+        '\uFEC1': '\u0637', '\uFEC2': '\u0637', '\uFEC3': '\u0637', '\uFEC4': '\u0637', '\uFEC5': '\u0638',
+        '\uFEC6': '\u0638', '\uFEC7': '\u0638', '\uFEC8': '\u0638', '\uFEC9': '\u0639', '\uFECA': '\u0639',
+        '\uFECB': '\u0639', '\uFECC': '\u0639', '\uFECD': '\u063A', '\uFECE': '\u063A', '\uFECF': '\u063A',
+        '\uFED0': '\u063A', '\uFED1': '\u0641', '\uFED2': '\u0641', '\uFED3': '\u0641', '\uFED4': '\u0641',
+        '\uFED5': '\u0642', '\uFED6': '\u0642', '\uFED7': '\u0642', '\uFED8': '\u0642', '\uFED9': '\u0643',
+        '\uFEDA': '\u0643', '\uFEDB': '\u0643', '\uFEDC': '\u0643', '\uFEDD': '\u0644', '\uFEDE': '\u0644',
+        '\uFEDF': '\u0644', '\uFEE0': '\u0644', '\uFEE1': '\u0645', '\uFEE2': '\u0645', '\uFEE3': '\u0645',
+        '\uFEE4': '\u0645', '\uFEE5': '\u0646', '\uFEE6': '\u0646', '\uFEE7': '\u0646', '\uFEE8': '\u0646',
+        '\uFEE9': '\u0647', '\uFEEA': '\u0647', '\uFEEB': '\u0647', '\uFEEC': '\u0647', '\uFEED': '\u0648',
+        '\uFEEE': '\u0648', '\uFEEF': '\u0649', '\uFEF0': '\u0649', '\uFEF1': '\u064A', '\uFEF2': '\u064A',
+        '\uFEF3': '\u064A', '\uFEF4': '\u064A', '\uFEF5': '\u0644\u0622', '\uFEF6': '\u0644\u0622',
+        '\uFEF7': '\u0644\u0623', '\uFEF8': '\u0644\u0623', '\uFEF9': '\u0644\u0625', '\uFEFA': '\u0644\u0625',
+        '\uFEFB': '\u0644\u0627', '\uFEFC': '\u0644\u0627'
+      };
+
+      let res = str.replace(/[\uFE80-\uFEFC]/g, ch => formsMap[ch] || ch);
+      // Remove zero-width & non-standard marks
+      res = res.replace(/[\u200B-\u200F\uFEFF]/g, '');
+      return res;
+    }
+
+    // Detect if Arabic word is stored reversed (e.g. 'دمحم' instead of 'محمد')
+    function fixIfReversedArabic(str) {
+      if (!str) return '';
+      // Common reversed Arabic indicators: e.g. starts with non-initial or ends with 'ال'
+      const trimmed = str.trim();
+      // If it ends with 'ال' like 'دمحملا' or 'ليمعلا', it's almost certainly reversed
+      if (/^[\u0600-\u06FF\s]+$/.test(trimmed)) {
+        if (/^[^اأإآ].*ال$/.test(trimmed) || /ليمعلا|ديسلا|يرتشملا/.test(trimmed)) {
+          return trimmed.split('').reverse().join('');
+        }
+      }
+      return trimmed;
+    }
+
     async function extractInfoFromPdf(file) {
       const statusEl = document.getElementById('pdf-extract-status');
       statusEl.style.display = 'block';
       statusEl.style.background = 'rgba(0, 168, 255, 0.1)';
       statusEl.style.border = '1px solid rgba(0, 168, 255, 0.25)';
       statusEl.style.color = '#40c4ff';
-      statusEl.innerHTML = '⏳ جاري فحص الفاتورة واستخراج اسم العميل ورقم الهاتف تلقائياً...';
+      statusEl.innerHTML = '⏳ جاري فحص الفاتورة واستخراج اسم العميل ورقم الهاتف...';
 
       try {
         if (!window.pdfjsLib) {
@@ -826,75 +881,178 @@
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-        let fullText = '';
+        let rawLines = [];
         const pagesToScan = Math.min(pdf.numPages, 3);
+
         for (let i = 1; i <= pagesToScan; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
-          const strings = content.items.map(it => it.str);
-          fullText += '\n' + strings.join(' ');
+          
+          // Group text items by line (using vertical coordinate transform[5])
+          let lineMap = {};
+          content.items.forEach(item => {
+            const y = Math.round(item.transform[5]);
+            if (!lineMap[y]) lineMap[y] = [];
+            lineMap[y].push(item.str);
+          });
+
+          // Sort lines from top to bottom
+          const sortedYs = Object.keys(lineMap).map(Number).sort((a, b) => b - a);
+          sortedYs.forEach(y => {
+            const lineStr = lineMap[y].join(' ');
+            if (lineStr.trim()) rawLines.push(lineStr.trim());
+          });
         }
 
-        const normalizedText = fullText.replace(/\s+/g, ' ');
+        // Normalize all lines for Arabic presentation forms
+        const normalizedLines = rawLines.map(l => normalizeArabicText(l));
+        const fullNormalizedText = normalizedLines.join('\n');
+        const reversedFullText = normalizedLines.map(l => l.split('').reverse().join('')).join('\n');
 
+        // ----------------------------------------------------
         // 1. Extract Phone Number
+        // ----------------------------------------------------
         let extractedPhone = '';
-        const phoneMatch = normalizedText.match(/(?:(?:\+|00)?971[\s-]?)?0?5[0-9]{1}[\s-]?[0-9]{3}[\s-]?[0-9]{4}\b/)
-          || normalizedText.match(/(?:الهاتف|هاتف|موبايل|الموبايل|جوال|الجوال|phone|mobile|tel)[\s:=-]*((?:\+?[0-9]{1,4}[\s-]?)?[0-9]{8,12})/i);
-
-        if (phoneMatch) {
-          extractedPhone = (phoneMatch[1] || phoneMatch[0]).replace(/[^0-9+]/g, '');
-        }
-
-        // 2. Extract Customer Name
-        let extractedName = '';
-        const nameRegexes = [
-          /(?:اسم\s*العميل|العميل|السيد\s*\/?\s*السيدة|المشتري|الزبون|المطلوب\s*من|Customer\s*Name|Customer|Bill\s*To|Client\s*Name|Client)[\s:=-]+([^\n\r,\/:|0-9]{3,35})/i,
-          /(?:السيد|السيدة|الأستاذ)[\s:=-]+([^\n\r,\/:|0-9]{3,35})/i
+        const phoneRegexes = [
+          /(?:(?:\+|00)?971[\s-]?)?0?5[0-9]{1}[\s-]?[0-9]{3}[\s-]?[0-9]{4}\b/,
+          /(?:الهاتف|هاتف|موبايل|الموبايل|جوال|الجوال|phone|mobile|tel)[\s:=-]*((?:\+?[0-9]{1,4}[\s-]?)?[0-9]{8,14})/i,
+          /(?:05\d{8})/
         ];
 
-        for (const regex of nameRegexes) {
-          const match = normalizedText.match(regex);
+        for (const pr of phoneRegexes) {
+          const m = fullNormalizedText.match(pr);
+          if (m) {
+            extractedPhone = (m[1] || m[0]).replace(/[^0-9+]/g, '');
+            if (extractedPhone.length >= 9) break;
+          }
+        }
+
+        // ----------------------------------------------------
+        // 2. Extract Customer Name (Support Normal & Reversed Arabic)
+        // ----------------------------------------------------
+        let extractedName = '';
+
+        // Patterns to match customer name in forward and reverse orders
+        const nameKeywordsForward = [
+          /(?:اسم\s*العميل|العميل|السيد\s*\/?\s*السيدة|اسم\s*المشتري|المشتري|الزبون|المطلوب\s*من|Customer\s*Name|Customer|Bill\s*To|Client\s*Name|Client)[\s:=-]+([^\n\r,\/:|0-9]{2,40})/i,
+          /(?:السيد|السيدة|الأستاذ|حضرة)[\s:=-]+([^\n\r,\/:|0-9]{2,40})/i
+        ];
+
+        const nameKeywordsReverse = [
+          /(?:ليمعلا\s*مسا|ليمعلا|ديسلا|يرتشملا|نوبزلا)[\s:=-]+([^\n\r,\/:|0-9]{2,40})/i
+        ];
+
+        // Try standard forward search
+        for (const regex of nameKeywordsForward) {
+          const match = fullNormalizedText.match(regex);
           if (match && match[1]) {
-            let candidate = match[1].trim();
-            candidate = candidate.replace(/\b(رقم|فاتورة|بتاريخ|تاريخ|هاتف|موبايل|Date|Invoice|Phone)\b.*/i, '').trim();
-            if (candidate.length >= 3) {
-              extractedName = candidate;
+            let cand = match[1].trim();
+            cand = cand.replace(/\b(رقم|فاتورة|بتاريخ|تاريخ|هاتف|موبايل|Date|Invoice|Phone|Cash|نقدا|الشارقة|دبي|عجمان)\b.*/i, '').trim();
+            cand = fixIfReversedArabic(cand);
+            if (cand.length >= 3 && !cand.includes('أمير العفيفي')) {
+              extractedName = cand;
               break;
             }
           }
         }
 
+        // If not found, try reversed Arabic search
+        if (!extractedName) {
+          for (const regex of nameKeywordsReverse) {
+            const match = fullNormalizedText.match(regex);
+            if (match && match[1]) {
+              let cand = match[1].trim();
+              cand = cand.split('').reverse().join('').trim();
+              cand = cand.replace(/\b(رقم|فاتورة|بتاريخ|تاريخ|هاتف|موبايل|Date|Invoice|Phone)\b.*/i, '').trim();
+              if (cand.length >= 3 && !cand.includes('أمير العفيفي')) {
+                extractedName = cand;
+                break;
+              }
+            }
+          }
+        }
+
+        // If still not found, check line-by-line next lines
+        if (!extractedName) {
+          for (let idx = 0; idx < normalizedLines.length; idx++) {
+            const line = normalizedLines[idx];
+            if (/(?:اسم\s*العميل|العميل|Customer|Client|Bill\s*To)/i.test(line)) {
+              // check current line after keyword
+              const parts = line.split(/[:=-]/);
+              if (parts.length > 1 && parts[1].trim().length >= 3) {
+                let cand = fixIfReversedArabic(parts[1].trim());
+                if (!cand.includes('أمير العفيفي') && !/^\d+$/.test(cand)) {
+                  extractedName = cand;
+                  break;
+                }
+              }
+              // check next line
+              if (!extractedName && idx + 1 < normalizedLines.length) {
+                const nextLine = normalizedLines[idx + 1].trim();
+                if (nextLine.length >= 3 && nextLine.length <= 40 && !/^\d+$/.test(nextLine) && !nextLine.includes('أمير العفيفي')) {
+                  extractedName = fixIfReversedArabic(nextLine);
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Clean final extracted name
+        if (extractedName) {
+          extractedName = extractedName.replace(/[؛،,:.\-_/\\]/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
         const nameInput = document.getElementById('link-name');
         const phoneInput = document.getElementById('link-phone');
 
-        let msg = '';
+        let msgParts = [];
         if (extractedName) {
           nameInput.value = extractedName;
-          msg += `👤 الاسم: <strong>${escapeHtml(extractedName)}</strong> `;
+          msgParts.push(`👤 الاسم: <strong>${escapeHtml(extractedName)}</strong>`);
         }
         if (extractedPhone) {
           phoneInput.value = extractedPhone;
-          msg += `📞 الهاتف: <strong>${escapeHtml(extractedPhone)}</strong>`;
+          msgParts.push(`📞 الهاتف: <strong>${escapeHtml(extractedPhone)}</strong>`);
         }
 
         if (extractedName || extractedPhone) {
           statusEl.style.background = 'rgba(0, 212, 160, 0.15)';
           statusEl.style.border = '1px solid rgba(0, 212, 160, 0.35)';
           statusEl.style.color = '#00d4a0';
-          statusEl.innerHTML = `✅ <strong>تم الاستخراج بنجاح!</strong> ${msg} <br><span style="font-size:0.75rem; color:#8db8d8;">(يمكنك مراجعة وتعديل الحقول أعلاه إذا رغبت قبل إنشاء الرابط)</span>`;
+          statusEl.innerHTML = `✅ <strong>تم الاستخراج بنجاح!</strong> ${msgParts.join(' &nbsp;|&nbsp; ')} <br><span style="font-size:0.75rem; color:#8db8d8;">(يمكنك مراجعة وتعديل الحقول أعلاه إذا رغبت قبل إنشاء الرابط)</span>`;
         } else {
           statusEl.style.background = 'rgba(245, 158, 11, 0.12)';
           statusEl.style.border = '1px solid rgba(245, 158, 11, 0.3)';
           statusEl.style.color = '#fbbf24';
-          statusEl.textContent = 'ℹ️ لم يتم التعرف على الاسم ورقم الهاتف تلقائياً من النص. يمكنك إدخالهما يدوياً بالخانة أعلاه.';
+          statusEl.innerHTML = 'ℹ️ لم نتمكن من تحديد اسم العميل بدقة من الكلمات الدلالية. يمكنك كتابته يدوياً في خانة "اسم العميل" أعلاه.';
+        }
+
+        // Show one-click name chips from lines if name wasn't detected
+        if (!extractedName && normalizedLines.length > 0) {
+          const candidates = [];
+          normalizedLines.forEach(l => {
+            const clean = l.replace(/[0-9\/\-:,\.]/g, '').trim();
+            if (/^[\u0600-\u06FF\s]{4,35}$/.test(clean) && !clean.includes('أمير العفيفي') && !clean.includes('فاتورة') && !clean.includes('ضريبة') && !clean.includes('الشارقة') && !clean.includes('دبي')) {
+              const fixed = fixIfReversedArabic(clean);
+              if (fixed && !candidates.includes(fixed)) candidates.push(fixed);
+            }
+          });
+          if (candidates.length > 0) {
+            const chipsHtml = candidates.slice(0, 6).map(c => `
+              <button type="button" onclick="document.getElementById('link-name').value='${escapeHtml(c)}';this.style.background='#10b981';" style="background:rgba(0,168,255,0.18); border:1px solid rgba(0,168,255,0.4); color:#e8f4ff; border-radius:14px; padding:4px 12px; font-size:0.78rem; cursor:pointer; font-family:'Cairo',sans-serif; margin:3px;">
+                + ${escapeHtml(c)}
+              </button>
+            `).join(' ');
+            statusEl.innerHTML += `<div style="margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.8rem; color:#8db8d8;">💡 أو اختر اسم العميل بنقرة واحدة من نصوص الفاتورة: <div style="margin-top:6px; display:flex; flex-wrap:wrap;">${chipsHtml}</div></div>`;
+          }
         }
       } catch (err) {
         console.error('PDF parsing error:', err);
         statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
         statusEl.style.border = '1px solid rgba(245, 158, 11, 0.25)';
         statusEl.style.color = '#fbbf24';
-        statusEl.textContent = 'ℹ️ يمكنك كتابة اسم العميل ورقم هاتفه يدوياً.';
+        statusEl.textContent = 'ℹ️ يمكنك إدخال اسم العميل ورقم هاتفه يدوياً.';
       }
     }
 
