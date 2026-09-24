@@ -157,8 +157,9 @@ async function loadSettings() {
       if (el) el.textContent = s.coupon_desc;
     }
     if (s.maps_url) {
+      defaultMapsUrl = s.maps_url;
       const el = document.getElementById('maps-link');
-      if (el) el.href = s.maps_url;
+      if (el) el.href = defaultMapsUrl;
     }
     // Load branches
     if (s.branches) {
@@ -169,6 +170,32 @@ async function loadSettings() {
     }
   } catch (e) {
     console.error('Error loading settings:', e);
+  }
+}
+
+let defaultMapsUrl = 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6';
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function updateMapsLink(branchName, branchMapsUrl) {
+  const mapsLink = document.getElementById('maps-link');
+  if (!mapsLink) return;
+
+  const targetUrl = (branchMapsUrl && branchMapsUrl.trim()) ? branchMapsUrl.trim() : defaultMapsUrl;
+  mapsLink.href = targetUrl;
+
+  if (branchName && branchName.trim()) {
+    mapsLink.textContent = `📍 فتح خرائط جوجل وتقييم ${branchName.trim()}`;
+  } else {
+    mapsLink.textContent = '📍 فتح خرائط جوجل وتقييم المتجر';
   }
 }
 
@@ -183,18 +210,27 @@ function renderBranches(branches) {
     return;
   }
   section.style.display = 'block';
-  container.innerHTML = branches.map(branch => `
-    <label class="option-card">
-      <input type="radio" name="branch" value="${branch.replace(/"/g, '&quot;')}">
-      <span class="option-label">
-        <span class="option-icon">🏪</span>
-        ${branch}
-      </span>
-    </label>
-  `).join('');
-  // Attach progress listener to branch radios
+
+  container.innerHTML = branches.map(branch => {
+    const name = typeof branch === 'string' ? branch : (branch.name || '');
+    const maps = typeof branch === 'object' ? (branch.maps_url || '') : '';
+    return `
+      <label class="option-card">
+        <input type="radio" name="branch" value="${escapeHtml(name)}" data-maps-url="${escapeHtml(maps)}">
+        <span class="option-label">
+          <span class="option-icon">🏪</span>
+          ${escapeHtml(name)}
+        </span>
+      </label>
+    `;
+  }).join('');
+
+  // Attach listener to update maps link when branch is chosen
   container.querySelectorAll('input[type=radio]').forEach(r => {
-    r.addEventListener('change', updateProgressExternal);
+    r.addEventListener('change', () => {
+      updateMapsLink(r.value, r.getAttribute('data-maps-url'));
+      updateProgressExternal();
+    });
   });
 }
 
@@ -521,6 +557,12 @@ function showSuccess(couponCode, hasInvoice, token) {
   if (hasInvoice && token) {
     document.getElementById('invoice-card').style.display = 'block';
     document.getElementById('invoice-download-btn').href = `/api/invoice/${token}`;
+  }
+
+  // Update maps button based on chosen branch
+  const selectedBranchRadio = document.querySelector('input[name="branch"]:checked');
+  if (selectedBranchRadio) {
+    updateMapsLink(selectedBranchRadio.value, selectedBranchRadio.getAttribute('data-maps-url'));
   }
 
   document.getElementById('success-screen').classList.add('show');
