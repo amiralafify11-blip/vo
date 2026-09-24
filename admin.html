@@ -61,18 +61,20 @@
     }
 
     .stat-card {
-      background: var(--bg-glass);
-      border: 1px solid var(--border-glass);
+      background: rgba(13, 21, 38, 0.85);
+      border: 1px solid rgba(0, 168, 255, 0.18);
       border-radius: var(--radius-lg);
       padding: 24px 20px;
       backdrop-filter: blur(16px);
       text-align: center;
       transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
 
     .stat-card:hover {
-      border-color: rgba(139, 92, 246, 0.2);
+      border-color: rgba(0, 168, 255, 0.4);
       transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 168, 255, 0.15);
     }
 
     .stat-value {
@@ -85,18 +87,19 @@
     }
 
     .stat-label {
-      color: var(--text-secondary);
+      color: #8db8d8;
       font-size: 0.85rem;
       margin-top: 4px;
     }
 
     /* Table */
     .table-wrapper {
-      background: var(--bg-glass);
-      border: 1px solid var(--border-glass);
+      background: rgba(13, 21, 38, 0.85);
+      border: 1px solid rgba(0, 168, 255, 0.18);
       border-radius: var(--radius-xl);
       overflow-x: auto;
       backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
 
     .data-table {
@@ -108,10 +111,10 @@
     .data-table th {
       padding: 16px 14px;
       text-align: right;
-      color: var(--text-muted);
+      color: #8db8d8;
       font-weight: 600;
-      font-size: 0.8rem;
-      border-bottom: 1px solid var(--border-glass);
+      font-size: 0.82rem;
+      border-bottom: 1px solid rgba(0, 168, 255, 0.2);
       white-space: nowrap;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -119,8 +122,8 @@
 
     .data-table td {
       padding: 14px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
-      color: var(--text-primary);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #e8f4ff;
       vertical-align: middle;
     }
 
@@ -129,7 +132,7 @@
     }
 
     .data-table tbody tr:hover {
-      background: rgba(139, 92, 246, 0.05);
+      background: rgba(0, 168, 255, 0.08);
     }
 
     .data-table tbody tr:last-child td {
@@ -145,7 +148,7 @@
     }
 
     .badge.yes {
-      background: rgba(16, 185, 129, 0.15);
+      background: rgba(0, 212, 160, 0.15);
       color: var(--accent-emerald);
     }
 
@@ -175,10 +178,10 @@
       align-items: center;
       gap: 6px;
       padding: 10px 20px;
-      background: rgba(139, 92, 246, 0.1);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: rgba(0, 168, 255, 0.12);
+      border: 1px solid rgba(0, 168, 255, 0.3);
       border-radius: var(--radius-md);
-      color: var(--accent-purple-light);
+      color: #40c4ff;
       font-family: 'Cairo', sans-serif;
       font-size: 0.85rem;
       font-weight: 600;
@@ -188,7 +191,7 @@
     }
 
     .refresh-btn:hover {
-      background: rgba(139, 92, 246, 0.2);
+      background: rgba(0, 168, 255, 0.22);
     }
 
     .export-btn {
@@ -196,8 +199,8 @@
       align-items: center;
       gap: 6px;
       padding: 10px 20px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(0, 212, 160, 0.12);
+      border: 1px solid rgba(0, 212, 160, 0.3);
       border-radius: var(--radius-md);
       color: var(--accent-emerald);
       font-family: 'Cairo', sans-serif;
@@ -210,7 +213,7 @@
     }
 
     .export-btn:hover {
-      background: rgba(16, 185, 129, 0.2);
+      background: rgba(0, 212, 160, 0.22);
     }
 
     .toolbar {
@@ -223,7 +226,7 @@
     }
 
     .toolbar .count {
-      color: var(--text-muted);
+      color: #8db8d8;
       font-size: 0.85rem;
     }
 
@@ -235,13 +238,13 @@
 
     /* Link Generator */
     .link-generator {
-      background: var(--bg-glass);
-      border: 1px solid var(--border-glass);
+      background: rgba(13, 21, 38, 0.85);
+      border: 1px solid rgba(0, 168, 255, 0.18);
       border-radius: var(--radius-xl);
       padding: 28px 24px;
       margin-bottom: 32px;
       backdrop-filter: blur(16px);
-      box-shadow: var(--shadow-soft);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
       position: relative;
       overflow: hidden;
     }
@@ -263,6 +266,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      color: #e8f4ff;
     }
 
     .link-form {
@@ -280,27 +284,36 @@
       margin-bottom: 6px;
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--text-secondary);
+      color: #a0c8e8;
     }
 
     .link-form input[type="text"],
-    .link-form input[type="tel"] {
+    .link-form input[type="tel"],
+    .link-form input[type="url"],
+    .link-form textarea {
       width: 100%;
       padding: 12px 16px;
-      background: rgba(255,255,255,0.8);
-      border: 1.5px solid rgba(0,0,0,0.08);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid rgba(0, 168, 255, 0.2);
       border-radius: var(--radius-md);
       font-family: 'Cairo', sans-serif;
       font-size: 0.9rem;
-      color: var(--text-primary);
+      color: #e8f4ff;
       outline: none;
       direction: rtl;
       transition: all 0.3s ease;
     }
 
-    .link-form input:focus {
-      border-color: var(--accent-purple);
-      box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+    .link-form input::placeholder,
+    .link-form textarea::placeholder {
+      color: rgba(141, 184, 216, 0.45);
+    }
+
+    .link-form input:focus,
+    .link-form textarea:focus {
+      border-color: #00a8ff;
+      background: rgba(0, 168, 255, 0.08);
+      box-shadow: 0 0 0 3px rgba(0, 168, 255, 0.15);
     }
 
     .file-upload {
@@ -309,16 +322,16 @@
       align-items: center;
       gap: 10px;
       padding: 12px 16px;
-      background: rgba(255,255,255,0.8);
-      border: 1.5px dashed rgba(0,0,0,0.12);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1.5px dashed rgba(0, 168, 255, 0.25);
       border-radius: var(--radius-md);
       cursor: pointer;
       transition: all 0.3s ease;
     }
 
     .file-upload:hover {
-      border-color: var(--accent-purple);
-      background: #f5f3ff;
+      border-color: #00a8ff;
+      background: rgba(0, 168, 255, 0.08);
     }
 
     .file-upload input[type="file"] {
@@ -330,7 +343,7 @@
 
     .file-upload .file-label {
       font-size: 0.85rem;
-      color: var(--text-secondary);
+      color: #8db8d8;
     }
 
     .file-upload .file-name {
@@ -369,8 +382,8 @@
       display: none;
       margin-top: 18px;
       padding: 16px;
-      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-      border: 1.5px solid rgba(16,185,129,0.2);
+      background: rgba(0, 212, 160, 0.08);
+      border: 1.5px solid rgba(0, 212, 160, 0.3);
       border-radius: var(--radius-md);
     }
 
@@ -385,9 +398,9 @@
     }
 
     .link-result .result-label {
-      font-size: 0.8rem;
-      color: #065f46;
-      font-weight: 600;
+      font-size: 0.85rem;
+      color: #00d4a0;
+      font-weight: 700;
       margin-bottom: 8px;
     }
 
@@ -396,12 +409,13 @@
       align-items: center;
       gap: 8px;
       padding: 10px 14px;
-      background: white;
+      background: rgba(5, 12, 24, 0.9);
+      border: 1px solid rgba(0, 212, 160, 0.2);
       border-radius: 8px;
       font-size: 0.85rem;
       direction: ltr;
       word-break: break-all;
-      color: var(--text-primary);
+      color: #e8f4ff;
     }
 
     .link-result .result-url .copy-btn {
@@ -438,23 +452,24 @@
     }
 
     .link-result .share-btns .wa-btn {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #bbf7d0;
+      background: rgba(37, 211, 102, 0.15);
+      color: #25d366;
+      border: 1px solid rgba(37, 211, 102, 0.3);
     }
 
     .link-result .share-btns .wa-btn:hover {
-      background: #bbf7d0;
+      background: rgba(37, 211, 102, 0.25);
     }
 
     /* Links Table */
     .links-table-wrapper {
-      background: var(--bg-glass);
-      border: 1px solid var(--border-glass);
+      background: rgba(13, 21, 38, 0.85);
+      border: 1px solid rgba(0, 168, 255, 0.18);
       border-radius: var(--radius-xl);
       overflow-x: auto;
       backdrop-filter: blur(16px);
       margin-bottom: 32px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
     }
 
     .section-heading {
@@ -555,11 +570,11 @@
         أدخل كود الكوبون الموضح مع العميل للتحقق من هويته وتحميل فاتورته الـ PDF.
       </p>
       <div style="display: flex; gap: 12px; max-width: 600px; flex-wrap: wrap;">
-        <input type="text" id="coupon-search-input" placeholder="مثال: ACC20-XXXXXX" style="flex: 1; min-width: 200px; padding: 12px 16px; background: rgba(255,255,255,0.8); border: 1.5px solid rgba(0,0,0,0.08); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.9rem; direction: ltr; text-transform: uppercase;">
+        <input type="text" id="coupon-search-input" placeholder="مثال: ACC20-XXXXXX" style="flex: 1; min-width: 200px; padding: 12px 16px; background: rgba(255, 255, 255, 0.06); border: 1.5px solid rgba(0, 168, 255, 0.25); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.95rem; color: #e8f4ff; direction: ltr; text-transform: uppercase;">
         <button class="generate-btn" id="search-coupon-btn" onclick="verifyCoupon()" style="background: var(--gradient-success); box-shadow: 0 4px 16px rgba(16,185,129,0.25);">🔍 بحث وتحقق</button>
       </div>
 
-      <div id="coupon-search-result" style="display: none; margin-top: 20px; padding: 20px; background: rgba(255,255,255,0.9); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft);">
+      <div id="coupon-search-result" style="display: none; margin-top: 20px; padding: 20px; background: rgba(7, 13, 26, 0.95); border: 1px solid rgba(0, 168, 255, 0.25); border-radius: var(--radius-lg); box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
       </div>
     </div>
 
@@ -578,7 +593,7 @@
           <input type="text" id="setting-store-name" placeholder="مثال: أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
         </div>
         <div>
-          <label>اسم الفرع</label>
+          <label>اسم الفرع الافتراضي</label>
           <input type="text" id="setting-branch-name" placeholder="مثال: فرع الشارقة 🇦🇪" oninput="updateWhatsAppPreview()">
         </div>
 
@@ -589,7 +604,7 @@
 
         <div class="full-width">
           <label>وصف الرابط في واتساب (الرسالة الترويجية التي تظهر في معاينة الرابط عند إرساله للعميل)</label>
-          <textarea id="setting-meta-desc" rows="2" style="width: 100%; padding: 12px 16px; background: rgba(255,255,255,0.8); border: 1.5px solid rgba(0,0,0,0.08); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.9rem; color: var(--text-primary); outline: none; direction: rtl; transition: all 0.3s ease;" placeholder="اكتب النص الترويجي الذي يظهر في واتساب..." oninput="updateWhatsAppPreview()"></textarea>
+          <textarea id="setting-meta-desc" rows="2" placeholder="اكتب النص الترويجي الذي يظهر في واتساب..." oninput="updateWhatsAppPreview()"></textarea>
         </div>
 
         <div class="full-width">
@@ -607,41 +622,52 @@
         </div>
 
         <div class="full-width">
-          <label>رابط تقييم خرائط جوجل للمتجر</label>
+          <label>رابط تقييم خرائط جوجل العام للمتجر (افتراضي)</label>
           <input type="url" id="setting-maps-url" placeholder="https://maps.app.goo.gl/..." style="direction: ltr; text-align: left;">
         </div>
 
         <!-- Branch Management -->
-        <div class="full-width" style="margin-top: 10px;">
-          <label style="display:flex; align-items:center; gap:8px;">
-            🏪 فروع المتجر
-            <span style="font-size:0.78rem; font-weight:400; color:var(--text-muted);">(تظهر للعميل في الاستبيان)</span>
+        <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(0, 168, 255, 0.04); border: 1px solid rgba(0, 168, 255, 0.18); border-radius: var(--radius-lg);">
+          <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
+            🏪 فروع المتجر وروابط الخرائط
           </label>
-          <div id="branches-list" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; min-height:36px;"></div>
-          <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
-            <input type="text" id="new-branch-input"
-              placeholder="أدخل اسم الفرع الجديد (مثال: فرع دبي 🇦🇪)"
-              style="flex:1; min-width:180px; padding:10px 14px; background:rgba(255,255,255,0.8); border:1.5px solid rgba(0,0,0,0.08); border-radius:var(--radius-md); font-family:'Cairo',sans-serif; font-size:0.88rem; direction:rtl; outline:none;"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
-            <button class="generate-btn" onclick="addBranch()" style="padding:10px 18px; font-size:0.88rem; background:linear-gradient(135deg,#10b981,#059669);">
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 12px;">
+            أضف فروعك مع رابط خرائط جوجل لكل فرع، حتى يُوجَّه العميل مباشرة لتقييم الفرع الذي اختاره!
+          </p>
+
+          <div id="branches-list" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; min-height:36px;"></div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; margin-top:14px; align-items:center;">
+            <div>
+              <input type="text" id="new-branch-name"
+                placeholder="اسم الفرع (مثال: فرع دبي 🇦🇪)"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
+            </div>
+            <div>
+              <input type="url" id="new-branch-maps"
+                placeholder="رابط لوكيشن جوجل ماب (https://maps.app.goo.gl/...)"
+                style="direction:ltr; text-align:left;"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
+            </div>
+            <button type="button" class="generate-btn" onclick="addBranch()" style="padding:10px 22px; font-size:0.88rem; background:linear-gradient(135deg,#00a8ff,#0066ff); white-space:nowrap;">
               + إضافة فرع
             </button>
           </div>
         </div>
 
         <!-- Live WhatsApp Preview Box -->
-        <div class="full-width" style="margin-top: 12px; background: #eef2f5; padding: 18px; border-radius: 12px; border: 1px solid #d1d7db;">
-          <div style="font-size: 0.85rem; font-weight: 700; color: #128c7e; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+        <div class="full-width" style="margin-top: 14px; background: rgba(11, 20, 36, 0.85); padding: 18px; border-radius: 12px; border: 1px solid rgba(0, 168, 255, 0.2);">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #25d366; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
             <span>💬</span> <span>معاينة مباشرة لشكل الرابط عند إرساله في واتساب:</span>
           </div>
-          <div style="background: #ffffff; border-radius: 8px; border-left: 5px solid #25d366; padding: 12px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); max-width: 500px;">
-            <div id="preview-meta-title" style="font-weight: 700; font-size: 0.95rem; color: #111b21; margin-bottom: 5px;">
+          <div style="background: #111b21; border-radius: 8px; border-left: 5px solid #25d366; padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); max-width: 500px;">
+            <div id="preview-meta-title" style="font-weight: 700; font-size: 0.95rem; color: #e9edef; margin-bottom: 5px;">
               استبيان رضا العملاء - أمير العفيفي للهواتف
             </div>
-            <div id="preview-meta-desc" style="font-size: 0.82rem; color: #667781; line-height: 1.4; margin-bottom: 8px;">
+            <div id="preview-meta-desc" style="font-size: 0.82rem; color: #8696a0; line-height: 1.4; margin-bottom: 8px;">
               استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات
             </div>
-            <div style="font-size: 0.75rem; color: #8696a0; display: flex; align-items: center; gap: 4px;">
+            <div style="font-size: 0.75rem; color: #00a8ff; display: flex; align-items: center; gap: 4px;">
               🔗 <span>amiralafify-invoice.netlify.app</span>
             </div>
           </div>
@@ -885,32 +911,32 @@
           resultDiv.innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
               <div>
-                <div style="font-size: 0.78rem; color: var(--text-muted);">الاسم الكامل للعميل</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">👤 ${escapeHtml(info.name)}</div>
+                <div style="font-size: 0.78rem; color: #8db8d8;">الاسم الكامل للعميل</div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: #e8f4ff; margin-top: 2px;">👤 ${escapeHtml(info.name)}</div>
               </div>
               <div>
-                <div style="font-size: 0.78rem; color: var(--text-muted);">رقم الهاتف</div>
-                <div style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-top: 2px; direction: ltr; text-align: right;">📞 ${escapeHtml(info.phone || '-')}</div>
+                <div style="font-size: 0.78rem; color: #8db8d8;">رقم الهاتف</div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: #e8f4ff; margin-top: 2px; direction: ltr; text-align: right;">📞 ${escapeHtml(info.phone || '-')}</div>
               </div>
               <div>
-                <div style="font-size: 0.78rem; color: var(--text-muted);">تقييم المحل</div>
+                <div style="font-size: 0.78rem; color: #8db8d8;">تقييم المحل</div>
                 <div style="font-size: 1.05rem; font-weight: 700; color: var(--accent-gold); margin-top: 2px;">${ratingStars}</div>
               </div>
               <div>
-                <div style="font-size: 0.78rem; color: var(--text-muted);">تاريخ الشراء</div>
-                <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-top: 2px;">📅 ${escapeHtml(info.purchase_date)}</div>
+                <div style="font-size: 0.78rem; color: #8db8d8;">تاريخ الشراء</div>
+                <div style="font-size: 0.95rem; font-weight: 600; color: #e8f4ff; margin-top: 2px;">📅 ${escapeHtml(info.purchase_date)}</div>
               </div>
             </div>
             
-            <div style="margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 14px;">
-              <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">تجربة العميل مع الموظفين (إجباري)</div>
-              <div style="font-size: 0.88rem; color: var(--text-secondary); background: #f8fafc; padding: 12px; border-radius: var(--radius-md); border: 1.5px solid rgba(0,0,0,0.02); font-style: italic;">
-                "${escapeHtml(info.experience)}"
+            <div style="margin-top: 16px; border-top: 1px solid rgba(0, 168, 255, 0.15); padding-top: 14px;">
+              <div style="font-size: 0.78rem; color: #8db8d8; margin-bottom: 6px;">تجربة العميل مع الموظفين</div>
+              <div style="font-size: 0.88rem; color: #e8f4ff; background: rgba(255, 255, 255, 0.05); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid rgba(0, 168, 255, 0.15); font-style: italic;">
+                "${escapeHtml(info.experience || 'لا توجد ملاحظة مكتوبة')}"
               </div>
             </div>
 
-            <div style="margin-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 14px;">
-              <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px;">فاتورة المشتريات</div>
+            <div style="margin-top: 16px; border-top: 1px solid rgba(0, 168, 255, 0.15); padding-top: 14px;">
+              <div style="font-size: 0.78rem; color: #8db8d8; margin-bottom: 6px;">فاتورة المشتريات</div>
               ${invoiceHtml}
             </div>
           `;
@@ -1153,31 +1179,58 @@
     let currentBranches = [];
 
     function renderBranchesList(branches) {
-      currentBranches = branches || [];
+      currentBranches = (branches || []).map(b => {
+        if (typeof b === 'string') return { name: b, maps_url: '' };
+        return { name: b.name || '', maps_url: b.maps_url || '' };
+      });
+
       const container = document.getElementById('branches-list');
       if (!currentBranches.length) {
-        container.innerHTML = '<span style="font-size:0.82rem;color:var(--text-muted);">لا توجد فروع بعد - أضف فرعاً أدناه</span>';
+        container.innerHTML = '<span style="font-size:0.82rem;color:var(--text-muted);padding:8px 0;">لا توجد فروع مضافة حالياً. أضف الفرع مع رابط الخريطة بالأسفل.</span>';
         return;
       }
+
       container.innerHTML = currentBranches.map((b, i) => `
-        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);border-radius:20px;padding:5px 12px;">
-          <span style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">🏪 ${escapeHtml(b)}</span>
-          <button onclick="removeBranch(${i})" style="background:none;border:none;cursor:pointer;font-size:0.9rem;color:#f43f5e;padding:0 2px;" title="حذف">✕</button>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(0, 168, 255, 0.08); border:1px solid rgba(0, 168, 255, 0.25); border-radius:10px; padding:10px 14px;">
+          <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; flex-wrap:wrap;">
+            <span style="font-size:1rem;">🏪</span>
+            <span style="font-size:0.9rem; font-weight:700; color:#e8f4ff; white-space:nowrap;">${escapeHtml(b.name)}</span>
+            ${b.maps_url ? `
+              <a href="${escapeHtml(b.maps_url)}" target="_blank" rel="noopener" style="font-size:0.78rem; color:#00a8ff; text-decoration:none; display:inline-flex; align-items:center; gap:4px; background:rgba(0,168,255,0.15); border:1px solid rgba(0,168,255,0.3); padding:3px 8px; border-radius:6px;" title="فتح رابط الخريطة">
+                📍 رابط الخريطة
+              </a>
+            ` : '<span style="font-size:0.75rem; color:var(--text-muted);">(بدون رابط خريطة - سيستخدم الرابط العام)</span>'}
+          </div>
+          <button type="button" onclick="removeBranch(${i})" style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.8rem; font-family:'Cairo',sans-serif;" title="حذف الفرع">
+            🗑️ حذف
+          </button>
         </div>
       `).join('');
     }
 
     function addBranch() {
-      const input = document.getElementById('new-branch-input');
-      const name = input.value.trim();
-      if (!name) return;
-      if (currentBranches.includes(name)) { alert('هذا الفرع موجود بالفعل'); return; }
-      currentBranches.push(name);
+      const nameInput = document.getElementById('new-branch-name');
+      const mapsInput = document.getElementById('new-branch-maps');
+      const name = nameInput.value.trim();
+      const maps_url = mapsInput.value.trim();
+
+      if (!name) {
+        alert('يرجى كتابة اسم الفرع');
+        return;
+      }
+      if (currentBranches.some(b => b.name === name)) {
+        alert('هذا الفرع موجود بالفعل');
+        return;
+      }
+
+      currentBranches.push({ name, maps_url });
       renderBranchesList(currentBranches);
-      input.value = '';
+      nameInput.value = '';
+      mapsInput.value = '';
     }
 
     function removeBranch(index) {
+      if (!confirm(`هل أنت متأكد من حذف فرع "${currentBranches[index].name}"؟`)) return;
       currentBranches.splice(index, 1);
       renderBranchesList(currentBranches);
     }
