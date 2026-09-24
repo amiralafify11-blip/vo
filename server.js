@@ -37,7 +37,7 @@ const defaultSettings = {
   discount_text: 'خصم 20%',
   coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
   maps_url:      'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6',
-  branches:      JSON.stringify(['فرع الشارقة 🇦🇪'])
+  branches:      JSON.stringify([{ name: 'فرع الشارقة 🇦🇪', maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6' }])
 };
 
 // Middleware
@@ -281,7 +281,7 @@ app.get('/api/settings', async (req, res) => {
 // ============================================
 app.post('/api/settings', async (req, res) => {
   try {
-    const { settings, sha } = await getSettings();
+    const { settings, sha } = await getSettings(true);
     const updated = { ...settings };
     for (const [key, val] of Object.entries(req.body)) {
       if (typeof val === 'string') updated[key] = val;
