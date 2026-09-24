@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة الإدارة - أمير العفيفي للهواتف</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <style>
     .admin-container {
       max-width: 1100px;
@@ -536,13 +542,17 @@
           <input type="tel" id="link-phone" placeholder="05X XXX XXXX">
         </div>
         <div class="full-width">
-          <label>فاتورة الشراء (اختياري - PDF فقط)</label>
+          <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+            <span>فاتورة الشراء (PDF)</span>
+            <span style="font-size:0.78rem; font-weight:700; color:#00a8ff;">✨ ارفع الفاتورة وسيتم استخراج الاسم ورقم الهاتف تلقائياً!</span>
+          </label>
           <div class="file-upload" id="file-upload-area">
             <span style="font-size: 1.3rem;">📎</span>
-            <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF فقط</span>
+            <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF (سيتم قراءة البيانات تلقائياً)</span>
             <span class="file-name" id="file-name" style="display:none;"></span>
             <input type="file" id="link-invoice" accept=".pdf">
           </div>
+          <div id="pdf-extract-status" style="display:none; margin-top:8px; font-size:0.84rem; padding:8px 14px; border-radius:8px;"></div>
         </div>
         <div class="full-width" style="display: flex; gap: 12px; align-items: flex-end;">
           <button class="generate-btn" id="generate-btn" onclick="generateLink()">✨ إنشاء الرابط</button>
@@ -778,19 +788,115 @@
     let lastGeneratedUrl = '';
 
     // ========================================
-    // File Upload UI
+    // File Upload & PDF Automatic Extraction
     // ========================================
-    document.getElementById('link-invoice').addEventListener('change', function() {
-      const fileName = this.files[0]?.name;
-      if (fileName) {
-        document.getElementById('file-label').style.display = 'none';
-        document.getElementById('file-name').style.display = 'inline';
-        document.getElementById('file-name').textContent = '✅ ' + fileName;
-      } else {
+    document.getElementById('link-invoice').addEventListener('change', async function() {
+      const file = this.files[0];
+      const statusEl = document.getElementById('pdf-extract-status');
+
+      if (!file) {
         document.getElementById('file-label').style.display = 'inline';
         document.getElementById('file-name').style.display = 'none';
+        if (statusEl) statusEl.style.display = 'none';
+        return;
+      }
+
+      document.getElementById('file-label').style.display = 'none';
+      document.getElementById('file-name').style.display = 'inline';
+      document.getElementById('file-name').textContent = '📄 ' + file.name;
+
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        await extractInfoFromPdf(file);
       }
     });
+
+    async function extractInfoFromPdf(file) {
+      const statusEl = document.getElementById('pdf-extract-status');
+      statusEl.style.display = 'block';
+      statusEl.style.background = 'rgba(0, 168, 255, 0.1)';
+      statusEl.style.border = '1px solid rgba(0, 168, 255, 0.25)';
+      statusEl.style.color = '#40c4ff';
+      statusEl.innerHTML = '⏳ جاري فحص الفاتورة واستخراج اسم العميل ورقم الهاتف تلقائياً...';
+
+      try {
+        if (!window.pdfjsLib) {
+          throw new Error('مكتبة PDF غير محملة');
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        let fullText = '';
+        const pagesToScan = Math.min(pdf.numPages, 3);
+        for (let i = 1; i <= pagesToScan; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const strings = content.items.map(it => it.str);
+          fullText += '\n' + strings.join(' ');
+        }
+
+        const normalizedText = fullText.replace(/\s+/g, ' ');
+
+        // 1. Extract Phone Number
+        let extractedPhone = '';
+        const phoneMatch = normalizedText.match(/(?:(?:\+|00)?971[\s-]?)?0?5[0-9]{1}[\s-]?[0-9]{3}[\s-]?[0-9]{4}\b/)
+          || normalizedText.match(/(?:الهاتف|هاتف|موبايل|الموبايل|جوال|الجوال|phone|mobile|tel)[\s:=-]*((?:\+?[0-9]{1,4}[\s-]?)?[0-9]{8,12})/i);
+
+        if (phoneMatch) {
+          extractedPhone = (phoneMatch[1] || phoneMatch[0]).replace(/[^0-9+]/g, '');
+        }
+
+        // 2. Extract Customer Name
+        let extractedName = '';
+        const nameRegexes = [
+          /(?:اسم\s*العميل|العميل|السيد\s*\/?\s*السيدة|المشتري|الزبون|المطلوب\s*من|Customer\s*Name|Customer|Bill\s*To|Client\s*Name|Client)[\s:=-]+([^\n\r,\/:|0-9]{3,35})/i,
+          /(?:السيد|السيدة|الأستاذ)[\s:=-]+([^\n\r,\/:|0-9]{3,35})/i
+        ];
+
+        for (const regex of nameRegexes) {
+          const match = normalizedText.match(regex);
+          if (match && match[1]) {
+            let candidate = match[1].trim();
+            candidate = candidate.replace(/\b(رقم|فاتورة|بتاريخ|تاريخ|هاتف|موبايل|Date|Invoice|Phone)\b.*/i, '').trim();
+            if (candidate.length >= 3) {
+              extractedName = candidate;
+              break;
+            }
+          }
+        }
+
+        const nameInput = document.getElementById('link-name');
+        const phoneInput = document.getElementById('link-phone');
+
+        let msg = '';
+        if (extractedName) {
+          nameInput.value = extractedName;
+          msg += `👤 الاسم: <strong>${escapeHtml(extractedName)}</strong> `;
+        }
+        if (extractedPhone) {
+          phoneInput.value = extractedPhone;
+          msg += `📞 الهاتف: <strong>${escapeHtml(extractedPhone)}</strong>`;
+        }
+
+        if (extractedName || extractedPhone) {
+          statusEl.style.background = 'rgba(0, 212, 160, 0.15)';
+          statusEl.style.border = '1px solid rgba(0, 212, 160, 0.35)';
+          statusEl.style.color = '#00d4a0';
+          statusEl.innerHTML = `✅ <strong>تم الاستخراج بنجاح!</strong> ${msg} <br><span style="font-size:0.75rem; color:#8db8d8;">(يمكنك مراجعة وتعديل الحقول أعلاه إذا رغبت قبل إنشاء الرابط)</span>`;
+        } else {
+          statusEl.style.background = 'rgba(245, 158, 11, 0.12)';
+          statusEl.style.border = '1px solid rgba(245, 158, 11, 0.3)';
+          statusEl.style.color = '#fbbf24';
+          statusEl.textContent = 'ℹ️ لم يتم التعرف على الاسم ورقم الهاتف تلقائياً من النص. يمكنك إدخالهما يدوياً بالخانة أعلاه.';
+        }
+      } catch (err) {
+        console.error('PDF parsing error:', err);
+        statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
+        statusEl.style.border = '1px solid rgba(245, 158, 11, 0.25)';
+        statusEl.style.color = '#fbbf24';
+        statusEl.textContent = 'ℹ️ يمكنك كتابة اسم العميل ورقم هاتفه يدوياً.';
+      }
+    }
 
     // ========================================
     // Generate Link
@@ -802,7 +908,7 @@
       const btn = document.getElementById('generate-btn');
 
       if (!name) {
-        alert('يرجى إدخال اسم العميل');
+        alert('يرجى إدخال اسم العميل (أو رفع الفاتورة ليتم استخراجه تلقائياً)');
         return;
       }
 
@@ -831,10 +937,15 @@
           document.getElementById('generated-url').textContent = lastGeneratedUrl;
           document.getElementById('link-result').classList.add('show');
 
-          // WhatsApp share
-          const waMsg = encodeURIComponent(`مرحباً ${name}! 🎉\nيسعدنا تواصلك مع أمير العفيفي للهواتف (فرع الشارقة) 📱\nنتمنى أنك استمتعت بتجربتك معنا. نرجو منك تعبئة هذا الاستبيان ورأيك بالموظفين${result.has_invoice ? ' لتتمكن من تحميل فاتورتك PDF' : ''}:\n${lastGeneratedUrl}`);
-          const waNumber = phone.replace(/[\s\-\(\)]/g, '');
-          document.getElementById('wa-share-btn').href = `https://wa.me/${waNumber}?text=${waMsg}`;
+          // WhatsApp share with exact requested message format
+          const waText = `شكرا لثقتكم فينا ❤️❤️\n${lastGeneratedUrl}\nحمل فاتورتك من الرابط ✅`;
+          const waMsg = encodeURIComponent(waText);
+          let waNumber = phone.replace(/[\s\-\(\)\+]/g, '');
+          if (waNumber.startsWith('05')) {
+            waNumber = '971' + waNumber.substring(1);
+          }
+          const waUrl = waNumber ? `https://wa.me/${waNumber}?text=${waMsg}` : `https://api.whatsapp.com/send?text=${waMsg}`;
+          document.getElementById('wa-share-btn').href = waUrl;
 
           // Reset form
           document.getElementById('link-name').value = '';
@@ -842,6 +953,8 @@
           fileInput.value = '';
           document.getElementById('file-label').style.display = 'inline';
           document.getElementById('file-name').style.display = 'none';
+          const statusEl = document.getElementById('pdf-extract-status');
+          if (statusEl) statusEl.style.display = 'none';
 
           // Reload links table
           loadLinks();
@@ -1027,6 +1140,12 @@
 
       tbody.innerHTML = links.map((link, i) => {
         const url = `${window.location.origin}/?t=${link.token}`;
+        const waText = `شكرا لثقتكم فينا ❤️❤️\n${url}\nحمل فاتورتك من الرابط ✅`;
+        const waMsg = encodeURIComponent(waText);
+        let waNum = (link.phone || '').replace(/[\s\-\(\)\+]/g, '');
+        if (waNum.startsWith('05')) waNum = '971' + waNum.substring(1);
+        const waLink = waNum ? `https://wa.me/${waNum}?text=${waMsg}` : `https://api.whatsapp.com/send?text=${waMsg}`;
+
         return `
           <tr>
             <td>${i + 1}</td>
@@ -1035,7 +1154,8 @@
             <td>${link.has_invoice ? '<span class="badge invoice">🧾 مرفقة</span>' : '<span style="color:var(--text-muted);">-</span>'}</td>
             <td>${link.is_completed ? '<span class="badge done">✅ مكتمل</span>' : '<span class="badge pending">⏳ بانتظار</span>'}</td>
             <td style="font-size:0.78rem;color:var(--text-muted);">${formatDate(link.created_at)}</td>
-            <td style="display: flex; gap: 6px;">
+            <td style="display: flex; gap: 6px; align-items: center;">
+              <a href="${waLink}" target="_blank" rel="noopener" class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#25d366;text-decoration:none;color:white;display:inline-flex;align-items:center;gap:3px;" title="إرسال عبر واتساب">💬 واتساب</a>
               <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;" onclick="navigator.clipboard.writeText('${url}');this.textContent='✅ تم';">📋 نسخ</button>
               <button class="copy-btn" style="padding:4px 10px;font-size:0.73rem;background:#f43f5e;" onclick="deleteLink(${link.id})">🗑️ حذف</button>
             </td>
