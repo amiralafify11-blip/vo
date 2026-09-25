@@ -10,20 +10,120 @@
   <title id="page-title">استبيان رضا العملاء - أمير العفيفي للهواتف</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* TTS Button */
+    /* Enhanced Prominent TTS Buttons */
     .tts-btn {
-      background: none;
-      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: linear-gradient(135deg, rgba(0, 168, 255, 0.16), rgba(0, 102, 255, 0.25));
+      border: 1.5px solid rgba(0, 168, 255, 0.5);
+      border-radius: 20px;
+      padding: 5px 12px;
       cursor: pointer;
-      font-size: 1.1rem;
-      padding: 2px 6px;
-      border-radius: 6px;
-      transition: background 0.2s;
-      opacity: 0.7;
+      color: #00d4ff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: 'Cairo', sans-serif;
+      transition: all 0.25s ease;
+      box-shadow: 0 2px 10px rgba(0, 168, 255, 0.2);
       vertical-align: middle;
-      margin-right: 4px;
+      margin-right: auto;
+      text-decoration: none;
     }
-    .tts-btn:hover { background: rgba(139,92,246,0.12); opacity: 1; }
+    .tts-btn:hover {
+      background: linear-gradient(135deg, #00a8ff, #0066ff);
+      color: #ffffff;
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px rgba(0, 168, 255, 0.45);
+    }
+    .tts-btn.speaking {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-color: #10b981;
+      color: #ffffff;
+      animation: audio-pulse 1.2s infinite alternate;
+    }
+    @keyframes audio-pulse {
+      0% { transform: scale(1); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+      100% { transform: scale(1.06); box-shadow: 0 0 18px rgba(16, 185, 129, 0.8); }
+    }
+
+    /* Prominent Audio Guide Banner for Customer */
+    .audio-guide-banner {
+      background: rgba(13, 21, 38, 0.95);
+      border: 2px solid #00a8ff;
+      border-radius: var(--radius-xl);
+      padding: 16px 20px;
+      margin-bottom: 22px;
+      box-shadow: 0 8px 30px rgba(0, 168, 255, 0.25), inset 0 0 20px rgba(0, 168, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      animation: banner-glow 3s infinite alternate;
+    }
+    @keyframes banner-glow {
+      0% { border-color: rgba(0, 168, 255, 0.5); box-shadow: 0 4px 20px rgba(0, 168, 255, 0.2); }
+      100% { border-color: rgba(0, 212, 255, 0.9); box-shadow: 0 8px 32px rgba(0, 168, 255, 0.4); }
+    }
+    .audio-guide-banner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #0066ff, #00d4ff, #0066ff);
+    }
+    .audio-guide-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .audio-guide-anim-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 8px #00a8ff);
+      animation: icon-bounce 2s infinite ease-in-out;
+    }
+    @keyframes icon-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px) scale(1.1); }
+    }
+    .audio-guide-title {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #e8f4ff;
+    }
+    .audio-guide-desc {
+      font-size: 0.8rem;
+      color: #8db8d8;
+      margin-top: 2px;
+    }
+    .audio-guide-play-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 18px;
+      background: linear-gradient(135deg, #0066ff, #00a8ff);
+      border: none;
+      border-radius: var(--radius-lg);
+      color: white;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 102, 255, 0.35);
+      transition: all 0.3s ease;
+    }
+    .audio-guide-play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 168, 255, 0.55);
+    }
+    .audio-guide-play-btn.playing {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
 
     /* Voice Recording */
     .recording-area {
@@ -145,6 +245,22 @@
       </div>
     </div>
 
+    <!-- Prominent Audio Guide for Illiterate / Non-reading Customers -->
+    <div class="audio-guide-banner" id="audio-guide-banner">
+      <div class="audio-guide-header">
+        <div class="audio-guide-anim-icon">📢</div>
+        <div class="audio-guide-info">
+          <div class="audio-guide-title">🔊 لا تجيد القراءة؟ استمع للشرح الصوتي</div>
+          <div class="audio-guide-desc">اضغط الزر للاستماع للتعليمات الصوتية لتحميل فاتورتك وتعبئة الاستبيان</div>
+        </div>
+      </div>
+      <button type="button" class="audio-guide-play-btn" id="audio-guide-play-btn" onclick="toggleCustomerAudioGuide()">
+        <span id="guide-icon">▶️</span>
+        <span id="guide-btn-text">اضغط هنا للاستماع للشرح بصوت المتجر 🎧</span>
+      </button>
+      <audio id="customer-voice-player" preload="none" style="display:none;"></audio>
+    </div>
+
     <!-- Survey Form -->
     <form id="survey-form" novalidate>
 
@@ -153,6 +269,7 @@
         <div class="section-title">
           <span class="icon purple">👤</span>
           <span>المعلومات الشخصية</span>
+          <button type="button" class="tts-btn" onclick="speakText('المعلومات الشخصية: الاسم ورقم الهاتف', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -172,8 +289,8 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon blue">🛒</span>
-          <button type="button" class="tts-btn" onclick="speakText('تفاصيل الشراء')" title="استمع">🔊</button>
           <span>تفاصيل الشراء</span>
+          <button type="button" class="tts-btn" onclick="speakText('تفاصيل الشراء: اختر الفرع وتاريخ الشراء وهل تم الشراء', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
 
         <!-- Branch selection (loaded dynamically from settings) -->
@@ -237,8 +354,8 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon gold">📢</span>
-          <button type="button" class="tts-btn" onclick="speakText('كيف عرفت عنا؟')" title="استمع">🔊</button>
           <span>كيف عرفت عنا؟</span>
+          <button type="button" class="tts-btn" onclick="speakText('كيف عرفت عنا؟ فيسبوك، تيك توك، انستجرام، واتساب، أو بالصدفة', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="options-grid">
           <label class="option-card">
@@ -284,8 +401,8 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon emerald">📍</span>
-          <button type="button" class="tts-btn" onclick="speakText('الإمارة')" title="استمع">🔊</button>
           <span>الإمارة</span>
+          <button type="button" class="tts-btn" onclick="speakText('اختر إمارتك', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="form-group">
           <label for="emirate"><span class="required">*</span> اختر إمارتك</label>
@@ -307,8 +424,8 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon rose">💬</span>
-          <button type="button" class="tts-btn" onclick="speakText('تجربتك مع الموظفين')" title="استمع">🔊</button>
           <span>تجربتك مع الموظفين</span>
+          <button type="button" class="tts-btn" onclick="speakText('أخبرنا عن تجربتك مع موظفينا. يمكنك تسجيل ملاحظة صوتية بالضغط على زر الميكروفون، أو كتابة تجربتك بالأسفل', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
 
         <!-- Voice Recording -->
@@ -338,8 +455,8 @@
       <div class="form-section">
         <div class="section-title">
           <span class="icon gold">⭐</span>
-          <button type="button" class="tts-btn" onclick="speakText('تقييم المحل')" title="استمع">🔊</button>
           <span>تقييم المحل</span>
+          <button type="button" class="tts-btn" onclick="speakText('تقييم المحل: كم نجمة تعطي المحل من نجمة إلى خمس نجوم', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="form-group">
           <label><span class="required">*</span> كم نجمة تعطي المحل؟</label>
@@ -390,15 +507,16 @@
 
       <!-- Invoice Download -->
       <div class="maps-card" id="invoice-card" style="display: none;">
-        <div class="maps-header">
+        <div class="maps-header" style="align-items: center;">
           <div class="maps-icon" style="background: #d1fae5;">🧾</div>
-          <div>
+          <div style="flex: 1;">
             <div class="maps-title">فاتورة الشراء الخاصة بك</div>
             <div class="maps-subtitle">يمكنك الآن تحميل فاتورتك بعد إكمال الاستبيان</div>
           </div>
+          <button type="button" class="tts-btn" onclick="speakText('اضغط على الزر الأخضر بالأسفل لتحميل وتنزيل فاتورة الشراء الخاصة بك بصيغة بي دي إف', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
-        <a href="#" id="invoice-download-btn" class="maps-btn" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; border-color: rgba(16, 185, 129, 0.3);">
-          📥 تحميل الفاتورة
+        <a href="#" id="invoice-download-btn" class="maps-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-size: 1.05rem; font-weight: 800; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
+          📥 اضغط هنا لتحميل الفاتورة (PDF)
         </a>
       </div>
 
