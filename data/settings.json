@@ -8,8 +8,8 @@
   "coupon_desc": "على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة",
   "maps_url": "https://maps.app.goo.gl/1UkyYkVRMNbsEvah6",
   "branches": "[\"الشارقه\",\"دبي\"]",
-  "voice_guides": "{\"personal\":{\"file\":\"voice_personal.mp3\",\"url\":\"/api/voice-guide/personal?v=1790340148547\"},\"purchase\":{\"file\":\"voice_purchase.mp3\",\"url\":\"/api/voice-guide/purchase?v=1790340700274\"},\"source\":{\"file\":\"voice_source.mp3\",\"url\":\"/api/voice-guide/source?v=1790341040390\"},\"emirate\":{\"file\":\"voice_emirate.mp3\",\"url\":\"/api/voice-guide/emirate?v=1790341184979\"},\"experience\":{\"file\":\"voice_experience.mp3\",\"url\":\"/api/voice-guide/experience?v=1790341341595\"},\"rating\":{\"file\":\"voice_rating.mp3\",\"url\":\"/api/voice-guide/rating?v=1790341531256\"},\"invoice\":{\"file\":\"voice_invoice.mp3\",\"url\":\"/api/voice-guide/invoice?v=1790356890995\"}}",
-  "has_voice_guide": "false",
-  "voice_guide_file": "",
-  "voice_guide_url": ""
+  "voice_guides": "{\"personal\":{\"file\":\"voice_personal.mp3\",\"url\":\"/api/voice-guide/personal?v=1790340148547\"},\"purchase\":{\"file\":\"voice_purchase.mp3\",\"url\":\"/api/voice-guide/purchase?v=1790340700274\"},\"source\":{\"file\":\"voice_source.mp3\",\"url\":\"/api/voice-guide/source?v=1790341040390\"},\"emirate\":{\"file\":\"voice_emirate.mp3\",\"url\":\"/api/voice-guide/emirate?v=1790341184979\"},\"experience\":{\"file\":\"voice_experience.mp3\",\"url\":\"/api/voice-guide/experience?v=1790341341595\"},\"rating\":{\"file\":\"voice_rating.mp3\",\"url\":\"/api/voice-guide/rating?v=1790341531256\"},\"invoice\":{\"file\":\"voice_invoice.mp3\",\"url\":\"/api/voice-guide/invoice?v=1790356890995\"},\"main\":{\"file\":\"voice_main.mp3\",\"url\":\"/api/voice-guide/main?v=1790357653296\"}}",
+  "has_voice_guide": "true",
+  "voice_guide_file": "voice_main.mp3",
+  "voice_guide_url": "/api/voice-guide/main?v=1790357653296"
 }
