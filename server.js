@@ -573,6 +573,80 @@ app.get('/api/recordings/:surveyId', async (req, res) => {
 });
 
 // ============================================
+// API: Voice Guide for Customers (Upload/Get/Delete)
+// ============================================
+app.post('/api/voice-guide', multerFree, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'يرجى إرفاق ملف صوتي' });
+    }
+
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.webm';
+    const filename = `voice_guide${ext}`;
+
+    // Upload audio binary to GitHub
+    await writeBinaryToGitHub(
+      `data/${filename}`,
+      req.file.buffer,
+      null,
+      'Upload customer voice guide audio'
+    );
+
+    // Update settings
+    const { settings, sha } = await getSettings(true);
+    settings.has_voice_guide = 'true';
+    settings.voice_guide_file = filename;
+    settings.voice_guide_url = `/api/voice-guide?v=${Date.now()}`;
+    await persistSettings(settings, sha);
+
+    res.json({ success: true, message: 'تم حفظ المقطع الصوتي بنجاح!', url: settings.voice_guide_url });
+  } catch (error) {
+    console.error('Error saving voice guide:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ في حفظ المقطع الصوتي' });
+  }
+});
+
+app.get('/api/voice-guide', async (req, res) => {
+  try {
+    const { settings } = await getSettings();
+    const filename = settings.voice_guide_file || 'voice_guide.webm';
+    
+    // Redirect directly to GitHub raw content URL for fast streaming and no buffer corruption
+    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data/${filename}`;
+    res.redirect(302, rawUrl);
+  } catch (error) {
+    console.error('Error fetching voice guide:', error);
+    res.status(500).json({ success: false, message: 'تعذر جلب المقطع الصوتي' });
+  }
+});
+
+app.delete('/api/voice-guide', async (req, res) => {
+  try {
+    const { settings, sha } = await getSettings(true);
+    const filename = settings.voice_guide_file || 'voice_guide.webm';
+
+    try {
+      const fileData = await readBinaryFromGitHub(`data/${filename}`);
+      if (fileData) {
+        await deleteFromGitHub(`data/${filename}`, fileData.sha, 'Delete customer voice guide');
+      }
+    } catch (e) {
+      console.warn('Could not delete audio file from GitHub:', e.message);
+    }
+
+    settings.has_voice_guide = 'false';
+    settings.voice_guide_file = '';
+    settings.voice_guide_url = '';
+    await persistSettings(settings, sha);
+
+    res.json({ success: true, message: 'تم حذف المقطع الصوتي بنجاح' });
+  } catch (error) {
+    console.error('Error deleting voice guide:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء حذف المقطع الصوتي' });
+  }
+});
+
+// ============================================
 // API: Search by coupon code
 // ============================================
 app.get('/api/coupon/:code', async (req, res) => {
