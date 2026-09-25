@@ -269,7 +269,7 @@
         <div class="section-title">
           <span class="icon purple">👤</span>
           <span>المعلومات الشخصية</span>
-          <button type="button" class="tts-btn" onclick="speakText('المعلومات الشخصية: الاسم ورقم الهاتف', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('personal', 'المعلومات الشخصية: الاسم ورقم الهاتف', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -290,7 +290,7 @@
         <div class="section-title">
           <span class="icon blue">🛒</span>
           <span>تفاصيل الشراء</span>
-          <button type="button" class="tts-btn" onclick="speakText('تفاصيل الشراء: اختر الفرع وتاريخ الشراء وهل تم الشراء', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('purchase', 'تفاصيل الشراء: اختر الفرع وتاريخ الشراء وهل تم الشراء', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
 
         <!-- Branch selection (loaded dynamically from settings) -->
@@ -355,7 +355,7 @@
         <div class="section-title">
           <span class="icon gold">📢</span>
           <span>كيف عرفت عنا؟</span>
-          <button type="button" class="tts-btn" onclick="speakText('كيف عرفت عنا؟ فيسبوك، تيك توك، انستجرام، واتساب، أو بالصدفة', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('source', 'كيف عرفت عنا؟ فيسبوك، تيك توك، انستجرام، واتساب، أو بالصدفة', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="options-grid">
           <label class="option-card">
@@ -402,7 +402,7 @@
         <div class="section-title">
           <span class="icon emerald">📍</span>
           <span>الإمارة</span>
-          <button type="button" class="tts-btn" onclick="speakText('اختر إمارتك', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('emirate', 'اختر إمارتك', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="form-group">
           <label for="emirate"><span class="required">*</span> اختر إمارتك</label>
@@ -425,7 +425,7 @@
         <div class="section-title">
           <span class="icon rose">💬</span>
           <span>تجربتك مع الموظفين</span>
-          <button type="button" class="tts-btn" onclick="speakText('أخبرنا عن تجربتك مع موظفينا. يمكنك تسجيل ملاحظة صوتية بالضغط على زر الميكروفون، أو كتابة تجربتك بالأسفل', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('experience', 'أخبرنا عن تجربتك مع موظفينا. يمكنك تسجيل ملاحظة صوتية بالضغط على زر الميكروفون، أو كتابة تجربتك بالأسفل', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
 
         <!-- Voice Recording -->
@@ -456,7 +456,7 @@
         <div class="section-title">
           <span class="icon gold">⭐</span>
           <span>تقييم المحل</span>
-          <button type="button" class="tts-btn" onclick="speakText('تقييم المحل: كم نجمة تعطي المحل من نجمة إلى خمس نجوم', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('rating', 'تقييم المحل: كم نجمة تعطي المحل من نجمة إلى خمس نجوم', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <div class="form-group">
           <label><span class="required">*</span> كم نجمة تعطي المحل؟</label>
@@ -513,7 +513,7 @@
             <div class="maps-title">فاتورة الشراء الخاصة بك</div>
             <div class="maps-subtitle">يمكنك الآن تحميل فاتورتك بعد إكمال الاستبيان</div>
           </div>
-          <button type="button" class="tts-btn" onclick="speakText('اضغط على الزر الأخضر بالأسفل لتحميل وتنزيل فاتورة الشراء الخاصة بك بصيغة بي دي إف', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
+          <button type="button" class="tts-btn" onclick="playAudioOrTts('invoice', 'اضغط على الزر الأخضر بالأسفل لتحميل وتنزيل فاتورة الشراء الخاصة بك بصيغة بي دي إف', this)" title="استمع"><span class="tts-icon">🔊</span> <span>استمع</span></button>
         </div>
         <a href="#" id="invoice-download-btn" class="maps-btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-size: 1.05rem; font-weight: 800; box-shadow: 0 4px 15px rgba(16,185,129,0.35);">
           📥 اضغط هنا لتحميل الفاتورة (PDF)
