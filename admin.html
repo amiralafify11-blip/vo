@@ -665,6 +665,47 @@
           </div>
         </div>
 
+        <!-- Voice Guide Settings -->
+        <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(0, 168, 255, 0.05); border: 1px solid rgba(0, 168, 255, 0.2); border-radius: var(--radius-lg);">
+          <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
+            🎙️ التسجيل الصوتي الإرشادي للعميل (صوت المتجر)
+            <span style="font-size:0.75rem; color:#00a8ff; font-weight:700;">✨ يسمعه العميل في أعلى صفحة الفاتورة والاستبيان</span>
+          </label>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 14px;">
+            يمكنك تسجيل رسالة صوتية ترحيبية بصوتك أو رفع ملف صوتي، ليتمكن العميل الذي لا يجيد القراءة من الاستماع لتوجيهات تحميل الفاتورة وتعبئة الاستبيان.
+          </p>
+
+          <!-- Current Audio Player (if exists) -->
+          <div id="admin-voice-container" style="display:none; margin-bottom:14px; padding:14px 16px; background:rgba(0,168,255,0.08); border-radius:10px; border:1px solid rgba(0,168,255,0.25);">
+            <div style="font-size:0.85rem; color:#00d4a0; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+              <span>✅</span> <span>يوجد تسجيل صوتي مفعل حالياً للعملاء:</span>
+            </div>
+            <audio id="admin-voice-player" controls style="width:100%; height:40px; margin-bottom:8px;"></audio>
+            <div>
+              <button type="button" onclick="deleteVoiceGuide()" style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; border-radius:6px; padding:5px 14px; font-size:0.8rem; cursor:pointer; font-family:'Cairo',sans-serif; font-weight:600;">
+                🗑️ حذف هذا المقطع والرجوع للقراءة الآلية
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls for Recording or Uploading -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button type="button" id="admin-record-btn" onclick="toggleAdminRecording()" style="display:inline-flex; align-items:center; gap:6px; padding:10px 18px; background:linear-gradient(135deg, #ef4444, #dc2626); color:white; border:none; border-radius:var(--radius-md); font-family:'Cairo',sans-serif; font-size:0.88rem; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(239,68,68,0.3);">
+              🎤 ابدأ تسجيل بصوتك الآن
+            </button>
+            <span id="admin-record-timer" style="display:none; font-weight:700; color:#ef4444; font-size:0.85rem;">00:00</span>
+
+            <div style="position:relative; display:inline-flex;">
+              <input type="file" id="voice-guide-file" accept="audio/*" style="position:absolute; inset:0; opacity:0; cursor:pointer; width:100%;" onchange="uploadVoiceGuideFile(this)">
+              <button type="button" style="display:inline-flex; align-items:center; gap:6px; padding:10px 18px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(0,168,255,0.3); color:#e8f4ff; border-radius:var(--radius-md); font-family:'Cairo',sans-serif; font-size:0.88rem; font-weight:600; cursor:pointer;">
+                📁 أو ارفع ملف صوتي من جهازك
+              </button>
+            </div>
+
+            <span id="voice-guide-status" style="font-size:0.84rem; font-weight:700;"></span>
+          </div>
+        </div>
+
         <!-- Live WhatsApp Preview Box -->
         <div class="full-width" style="margin-top: 14px; background: rgba(11, 20, 36, 0.85); padding: 18px; border-radius: 12px; border: 1px solid rgba(0, 168, 255, 0.2);">
           <div style="font-size: 0.85rem; font-weight: 700; color: #25d366; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
@@ -1546,9 +1587,180 @@
           renderBranchesList([]);
         }
 
+        if (s.has_voice_guide === 'true' || s.voice_guide_url) {
+          showAdminVoicePlayer(s.voice_guide_url || '/api/voice-guide');
+        } else {
+          const container = document.getElementById('admin-voice-container');
+          if (container) container.style.display = 'none';
+        }
+
         updateWhatsAppPreview();
       } catch (e) {
         console.error('Error loading settings:', e);
+      }
+    }
+
+    // ========================================
+    // Admin Voice Guide Recording & Upload
+    // ========================================
+    let adminMediaRecorder = null;
+    let adminAudioChunks = [];
+    let isAdminRecording = false;
+    let adminRecordingInterval = null;
+    let adminRecordingSeconds = 0;
+
+    async function toggleAdminRecording() {
+      if (isAdminRecording) {
+        stopAdminRecording();
+      } else {
+        await startAdminRecording();
+      }
+    }
+
+    async function startAdminRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm';
+
+        adminMediaRecorder = new MediaRecorder(stream, { mimeType });
+        adminAudioChunks = [];
+
+        adminMediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) adminAudioChunks.push(e.data);
+        };
+
+        adminMediaRecorder.onstop = async () => {
+          const blob = new Blob(adminAudioChunks, { type: 'audio/webm' });
+          await uploadVoiceGuideBlob(blob);
+        };
+
+        adminMediaRecorder.start(100);
+        isAdminRecording = true;
+
+        const btn = document.getElementById('admin-record-btn');
+        btn.innerHTML = '⏹️ إيقاف وحفظ التسجيل';
+        btn.style.background = '#00a8ff';
+
+        const timerEl = document.getElementById('admin-record-timer');
+        timerEl.style.display = 'inline';
+        adminRecordingSeconds = 0;
+        adminRecordingInterval = setInterval(() => {
+          adminRecordingSeconds++;
+          const m = Math.floor(adminRecordingSeconds / 60).toString().padStart(2, '0');
+          const s = (adminRecordingSeconds % 60).toString().padStart(2, '0');
+          timerEl.textContent = `${m}:${s}`;
+          if (adminRecordingSeconds >= 180) stopAdminRecording();
+        }, 1000);
+
+      } catch (err) {
+        console.error('Mic error:', err);
+        alert('تعذر فتح الميكروفون. يرجى التأكد من السماح بالوصول للميكروفون أو رفع ملف صوتي جاهز.');
+      }
+    }
+
+    function stopAdminRecording() {
+      if (adminMediaRecorder && adminMediaRecorder.state !== 'inactive') {
+        adminMediaRecorder.stop();
+        adminMediaRecorder.stream.getTracks().forEach(t => t.stop());
+      }
+      clearInterval(adminRecordingInterval);
+      document.getElementById('admin-record-timer').style.display = 'none';
+      isAdminRecording = false;
+
+      const btn = document.getElementById('admin-record-btn');
+      btn.innerHTML = '🎤 ابدأ تسجيل بصوتك الآن';
+      btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    }
+
+    async function uploadVoiceGuideBlob(blob) {
+      const status = document.getElementById('voice-guide-status');
+      status.style.color = '#00a8ff';
+      status.textContent = '⏳ جاري حفظ ورفع التسجيل الصوتي...';
+
+      try {
+        const formData = new FormData();
+        formData.append('voice_guide', blob, 'voice_guide.webm');
+
+        const res = await fetch('/api/voice-guide', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          status.style.color = '#10b981';
+          status.textContent = '✅ تم حفظ التسجيل الصوتي للعملاء بنجاح!';
+          showAdminVoicePlayer(data.url);
+        } else {
+          status.style.color = '#ef4444';
+          status.textContent = '❌ ' + (data.message || 'فشل الحفظ');
+        }
+      } catch (e) {
+        console.error(e);
+        status.style.color = '#ef4444';
+        status.textContent = '❌ خطأ أثناء رفع التسجيل';
+      }
+    }
+
+    async function uploadVoiceGuideFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const status = document.getElementById('voice-guide-status');
+      status.style.color = '#00a8ff';
+      status.textContent = `⏳ جاري رفع ${file.name}...`;
+
+      try {
+        const formData = new FormData();
+        formData.append('voice_guide', file, file.name);
+
+        const res = await fetch('/api/voice-guide', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          status.style.color = '#10b981';
+          status.textContent = '✅ تم رفع وحفظ الملف الصوتي بنجاح!';
+          showAdminVoicePlayer(data.url);
+        } else {
+          status.style.color = '#ef4444';
+          status.textContent = '❌ ' + (data.message || 'فشل الرفع');
+        }
+      } catch (e) {
+        console.error(e);
+        status.style.color = '#ef4444';
+        status.textContent = '❌ حدث خطأ أثناء الرفع';
+      } finally {
+        input.value = '';
+      }
+    }
+
+    function showAdminVoicePlayer(url) {
+      const container = document.getElementById('admin-voice-container');
+      const player = document.getElementById('admin-voice-player');
+      player.src = url || '/api/voice-guide';
+      container.style.display = 'block';
+    }
+
+    async function deleteVoiceGuide() {
+      if (!confirm('هل أنت متأكد من حذف هذا المقطع الصوتي؟ سيعود النظام للقراءة الآلية للعملاء.')) return;
+      try {
+        const res = await fetch('/api/voice-guide', { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('admin-voice-container').style.display = 'none';
+          document.getElementById('admin-voice-player').src = '';
+          const status = document.getElementById('voice-guide-status');
+          status.style.color = '#f59e0b';
+          status.textContent = '🗑️ تم حذف التسجيل';
+        }
+      } catch (e) {
+        console.error(e);
+        alert('حدث خطأ أثناء الحذف');
       }
     }
 
