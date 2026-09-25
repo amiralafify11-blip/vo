@@ -21,57 +21,117 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ========================================
-// 🔊 Audio Guide & Text-to-Speech
+// 🔊 Audio Guide & Text-to-Speech (Multi-Button)
 // ========================================
 let hasVoiceGuide = false;
 let voiceGuideUrl = '';
 let isPlayingVoiceGuide = false;
 let currentSpeakingBtn = null;
+let voiceGuidesMap = {};
+const sectionVoicePlayer = new Audio();
+
+function stopAllAudioAndTts() {
+  if (sectionVoicePlayer) {
+    sectionVoicePlayer.pause();
+    sectionVoicePlayer.currentTime = 0;
+  }
+  const custPlayer = document.getElementById('customer-voice-player');
+  if (custPlayer) {
+    custPlayer.pause();
+    custPlayer.currentTime = 0;
+  }
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  if (currentSpeakingBtn) {
+    currentSpeakingBtn.classList.remove('speaking');
+    currentSpeakingBtn = null;
+  }
+  isPlayingVoiceGuide = false;
+  const guideBtn = document.getElementById('audio-guide-play-btn');
+  if (guideBtn) guideBtn.classList.remove('playing');
+  const guideIcon = document.getElementById('guide-icon');
+  if (guideIcon) guideIcon.textContent = '▶️';
+  const guideText = document.getElementById('guide-btn-text');
+  if (guideText) guideText.textContent = 'اضغط هنا للاستماع للشرح بصوت المتجر 🎧';
+}
+
+function playAudioOrTts(key, fallbackText, btn) {
+  // If clicking on currently playing button -> stop it
+  if (currentSpeakingBtn === btn) {
+    stopAllAudioAndTts();
+    return;
+  }
+
+  // Stop whatever was playing
+  stopAllAudioAndTts();
+
+  const customGuide = voiceGuidesMap[key];
+  if (customGuide && customGuide.url) {
+    // Play custom audio recorded/uploaded for this button
+    sectionVoicePlayer.src = customGuide.url;
+    sectionVoicePlayer.currentTime = 0;
+
+    if (btn) {
+      btn.classList.add('speaking');
+      currentSpeakingBtn = btn;
+    }
+
+    sectionVoicePlayer.play().catch(err => {
+      console.warn('Audio file play failed, fallback to TTS:', err);
+      speakText(fallbackText, btn);
+    });
+
+    sectionVoicePlayer.onended = () => {
+      if (btn) btn.classList.remove('speaking');
+      if (currentSpeakingBtn === btn) currentSpeakingBtn = null;
+    };
+
+    sectionVoicePlayer.onerror = () => {
+      if (btn) btn.classList.remove('speaking');
+      if (currentSpeakingBtn === btn) currentSpeakingBtn = null;
+      speakText(fallbackText, btn);
+    };
+  } else {
+    // No custom audio uploaded for this button -> use browser Arabic TTS
+    speakText(fallbackText, btn);
+  }
+}
 
 function toggleCustomerAudioGuide() {
-  const player = document.getElementById('customer-voice-player');
   const btn = document.getElementById('audio-guide-play-btn');
   const icon = document.getElementById('guide-icon');
   const text = document.getElementById('guide-btn-text');
 
   if (isPlayingVoiceGuide) {
-    if (player) player.pause();
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    isPlayingVoiceGuide = false;
-    if (btn) btn.classList.remove('playing');
-    if (icon) icon.textContent = '▶️';
-    if (text) text.textContent = 'اضغط هنا للاستماع للشرح بصوت المتجر 🎧';
+    stopAllAudioAndTts();
     return;
   }
 
-  // Cancel any active section TTS
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  if (currentSpeakingBtn) {
-    currentSpeakingBtn.classList.remove('speaking');
-    currentSpeakingBtn = null;
-  }
+  stopAllAudioAndTts();
 
-  // If custom audio guide is configured, play it
-  if (hasVoiceGuide && player && player.src) {
-    player.currentTime = 0;
-    player.play().then(() => {
+  const customGuide = voiceGuidesMap['main'];
+  if (customGuide && customGuide.url) {
+    sectionVoicePlayer.src = customGuide.url;
+    sectionVoicePlayer.currentTime = 0;
+
+    sectionVoicePlayer.play().then(() => {
       isPlayingVoiceGuide = true;
       if (btn) btn.classList.add('playing');
       if (icon) icon.textContent = '⏹️';
       if (text) text.textContent = 'إيقاف الصوت ⏸️';
     }).catch(err => {
-      console.warn('Audio play failed, falling back to TTS guide:', err);
+      console.warn('Main audio play failed, falling back to TTS guide:', err);
       playDefaultTtsGuide();
     });
 
-    player.onended = () => {
+    sectionVoicePlayer.onended = () => {
       isPlayingVoiceGuide = false;
       if (btn) btn.classList.remove('playing');
       if (icon) icon.textContent = '▶️';
       if (text) text.textContent = 'إعادة الاستماع للشرح 🎧';
     };
   } else {
-    // Fallback to synthetic Arabic speech guide
     playDefaultTtsGuide();
   }
 }
@@ -121,31 +181,13 @@ function playDefaultTtsGuide() {
 function speakText(text, btn) {
   if (!('speechSynthesis' in window)) return;
 
-  // Stop custom audio guide if active
-  const player = document.getElementById('customer-voice-player');
-  if (player && !player.paused) {
-    player.pause();
-    isPlayingVoiceGuide = false;
-    const guideBtn = document.getElementById('audio-guide-play-btn');
-    if (guideBtn) guideBtn.classList.remove('playing');
-    const guideIcon = document.getElementById('guide-icon');
-    if (guideIcon) guideIcon.textContent = '▶️';
-    const guideText = document.getElementById('guide-btn-text');
-    if (guideText) guideText.textContent = 'اضغط هنا للاستماع للشرح 🎧';
-  }
-
   // Toggle off if clicking the currently speaking button
   if (window.speechSynthesis.speaking && currentSpeakingBtn === btn) {
-    window.speechSynthesis.cancel();
-    if (btn) btn.classList.remove('speaking');
-    currentSpeakingBtn = null;
+    stopAllAudioAndTts();
     return;
   }
 
-  window.speechSynthesis.cancel();
-  if (currentSpeakingBtn) {
-    currentSpeakingBtn.classList.remove('speaking');
-  }
+  stopAllAudioAndTts();
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'ar-AE';
@@ -304,14 +346,24 @@ async function loadSettings() {
         renderBranches(branches);
       } catch (e) {}
     }
-    // Voice Guide configuration
-    if (s.has_voice_guide === 'true' || s.voice_guide_url) {
-      hasVoiceGuide = true;
-      voiceGuideUrl = s.voice_guide_url || '/api/voice-guide';
-      const player = document.getElementById('customer-voice-player');
-      if (player) {
-        player.src = voiceGuideUrl;
+    // Voice Guide configuration (multi-button & main)
+    voiceGuidesMap = {};
+    if (s.voice_guides) {
+      try {
+        voiceGuidesMap = typeof s.voice_guides === 'string' ? JSON.parse(s.voice_guides) : s.voice_guides;
+      } catch (e) {
+        voiceGuidesMap = {};
       }
+    }
+    // Backward compatibility for main banner voice guide
+    if (!voiceGuidesMap.main && (s.has_voice_guide === 'true' || s.voice_guide_url)) {
+      voiceGuidesMap.main = { url: s.voice_guide_url || '/api/voice-guide/main' };
+    }
+    if (voiceGuidesMap.main && voiceGuidesMap.main.url) {
+      hasVoiceGuide = true;
+      voiceGuideUrl = voiceGuidesMap.main.url;
+      const player = document.getElementById('customer-voice-player');
+      if (player) player.src = voiceGuideUrl;
     } else {
       hasVoiceGuide = false;
       voiceGuideUrl = '';
