@@ -8,8 +8,8 @@
   "coupon_desc": "على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة",
   "maps_url": "https://maps.app.goo.gl/1UkyYkVRMNbsEvah6",
   "branches": "[\"الشارقه\",\"دبي\"]",
-  "voice_guides": "{\"main\":{\"file\":\"voice_main.mp3\",\"url\":\"/api/voice-guide/main?v=1790337223419\"}}",
+  "voice_guides": "{\"main\":{\"file\":\"voice_main.mp3\",\"url\":\"/api/voice-guide/main?v=1790340012164\"}}",
   "has_voice_guide": "true",
   "voice_guide_file": "voice_main.mp3",
-  "voice_guide_url": "/api/voice-guide/main?v=1790337223419"
+  "voice_guide_url": "/api/voice-guide/main?v=1790340012164"
 }
