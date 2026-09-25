@@ -7,5 +7,8 @@
   "discount_text": "خصم 20%",
   "coupon_desc": "على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة",
   "maps_url": "https://maps.app.goo.gl/1UkyYkVRMNbsEvah6",
-  "branches": "[\"الشارقه\",\"دبي\"]"
+  "branches": "[\"الشارقه\",\"دبي\"]",
+  "has_voice_guide": "true",
+  "voice_guide_file": "voice_guide.mp3",
+  "voice_guide_url": "/api/voice-guide?v=1790335900248"
 }
