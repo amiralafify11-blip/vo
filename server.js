@@ -37,7 +37,8 @@ const defaultSettings = {
   discount_text: 'خصم 20%',
   coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
   maps_url:      'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6',
-  branches:      JSON.stringify([{ name: 'فرع الشارقة 🇦🇪', maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6' }])
+  branches:      JSON.stringify([{ name: 'فرع الشارقة 🇦🇪', maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6' }]),
+  voice_guides:  JSON.stringify({})
 };
 
 // Middleware
@@ -104,9 +105,16 @@ async function writeJsonToGitHub(filePath, data, sha, message) {
 }
 
 async function writeBinaryToGitHub(filePath, buffer, sha, message) {
+  let existingSha = sha;
+  if (!existingSha) {
+    try {
+      const existing = await readBinaryFromGitHub(filePath);
+      if (existing && existing.sha) existingSha = existing.sha;
+    } catch (e) {}
+  }
   const content = buffer.toString('base64');
   const body = { message: message || `Upload ${filePath}`, content, branch: GITHUB_BRANCH };
-  if (sha) body.sha = sha;
+  if (existingSha) body.sha = existingSha;
 
   const res = await githubRequest('PUT',
     `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, body);
@@ -573,46 +581,88 @@ app.get('/api/recordings/:surveyId', async (req, res) => {
 });
 
 // ============================================
-// API: Voice Guide for Customers (Upload/Get/Delete)
+// API: Voice Guide for Customers (Upload/Get/Delete per button)
 // ============================================
-app.post('/api/voice-guide', multerFree, async (req, res) => {
+const VALID_VOICE_KEYS = ['main', 'personal', 'purchase', 'source', 'emirate', 'experience', 'rating', 'invoice'];
+
+app.post(['/api/voice-guide', '/api/voice-guide/:key'], multerFree, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'يرجى إرفاق ملف صوتي' });
     }
 
+    const key = (req.params.key || req.body.key || 'main').toLowerCase();
+    if (!VALID_VOICE_KEYS.includes(key)) {
+      return res.status(400).json({ success: false, message: 'مفتاح صوتي غير صالح' });
+    }
+
     const ext = path.extname(req.file.originalname).toLowerCase() || '.webm';
-    const filename = `voice_guide${ext}`;
+    const filename = `voice_${key}${ext}`;
 
     // Upload audio binary to GitHub
     await writeBinaryToGitHub(
-      `data/${filename}`,
+      `data/voice/${filename}`,
       req.file.buffer,
       null,
-      'Upload customer voice guide audio'
+      `Upload voice audio for button ${key}`
     );
 
     // Update settings
     const { settings, sha } = await getSettings(true);
-    settings.has_voice_guide = 'true';
-    settings.voice_guide_file = filename;
-    settings.voice_guide_url = `/api/voice-guide?v=${Date.now()}`;
+    let guides = {};
+    try {
+      guides = typeof settings.voice_guides === 'string' ? JSON.parse(settings.voice_guides) : (settings.voice_guides || {});
+    } catch (e) { guides = {}; }
+
+    guides[key] = {
+      file: filename,
+      url: `/api/voice-guide/${key}?v=${Date.now()}`
+    };
+
+    settings.voice_guides = JSON.stringify(guides);
+
+    if (key === 'main') {
+      settings.has_voice_guide = 'true';
+      settings.voice_guide_file = filename;
+      settings.voice_guide_url = guides[key].url;
+    }
+
     await persistSettings(settings, sha);
 
-    res.json({ success: true, message: 'تم حفظ المقطع الصوتي بنجاح!', url: settings.voice_guide_url });
+    res.json({
+      success: true,
+      message: 'تم حفظ المقطع الصوتي بنجاح!',
+      key,
+      url: guides[key].url,
+      voice_guides: guides
+    });
   } catch (error) {
     console.error('Error saving voice guide:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ في حفظ المقطع الصوتي' });
   }
 });
 
-app.get('/api/voice-guide', async (req, res) => {
+app.get(['/api/voice-guide', '/api/voice-guide/:key'], async (req, res) => {
   try {
+    const key = (req.params.key || 'main').toLowerCase();
     const { settings } = await getSettings();
-    const filename = settings.voice_guide_file || 'voice_guide.webm';
-    
-    // Redirect directly to GitHub raw content URL for fast streaming and no buffer corruption
-    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data/${filename}`;
+
+    let guides = {};
+    try {
+      guides = typeof settings.voice_guides === 'string' ? JSON.parse(settings.voice_guides) : (settings.voice_guides || {});
+    } catch (e) {}
+
+    let filename = guides[key]?.file;
+    if (!filename && key === 'main') {
+      filename = settings.voice_guide_file || 'voice_guide.webm';
+    }
+
+    if (!filename) {
+      return res.status(404).json({ success: false, message: 'لا يوجد مقطع صوتي مخصص لهذا الزر' });
+    }
+
+    // Redirect directly to GitHub raw content URL
+    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data/voice/${filename}`;
     res.redirect(302, rawUrl);
   } catch (error) {
     console.error('Error fetching voice guide:', error);
@@ -620,26 +670,41 @@ app.get('/api/voice-guide', async (req, res) => {
   }
 });
 
-app.delete('/api/voice-guide', async (req, res) => {
+app.delete(['/api/voice-guide', '/api/voice-guide/:key'], async (req, res) => {
   try {
+    const key = (req.params.key || 'main').toLowerCase();
     const { settings, sha } = await getSettings(true);
-    const filename = settings.voice_guide_file || 'voice_guide.webm';
 
+    let guides = {};
     try {
-      const fileData = await readBinaryFromGitHub(`data/${filename}`);
-      if (fileData) {
-        await deleteFromGitHub(`data/${filename}`, fileData.sha, 'Delete customer voice guide');
+      guides = typeof settings.voice_guides === 'string' ? JSON.parse(settings.voice_guides) : (settings.voice_guides || {});
+    } catch (e) {}
+
+    const filename = guides[key]?.file || (key === 'main' ? settings.voice_guide_file : null);
+
+    if (filename) {
+      try {
+        const fileData = await readBinaryFromGitHub(`data/voice/${filename}`);
+        if (fileData) {
+          await deleteFromGitHub(`data/voice/${filename}`, fileData.sha, `Delete voice audio for ${key}`);
+        }
+      } catch (e) {
+        console.warn('Could not delete audio file from GitHub:', e.message);
       }
-    } catch (e) {
-      console.warn('Could not delete audio file from GitHub:', e.message);
     }
 
-    settings.has_voice_guide = 'false';
-    settings.voice_guide_file = '';
-    settings.voice_guide_url = '';
+    delete guides[key];
+    settings.voice_guides = JSON.stringify(guides);
+
+    if (key === 'main') {
+      settings.has_voice_guide = 'false';
+      settings.voice_guide_file = '';
+      settings.voice_guide_url = '';
+    }
+
     await persistSettings(settings, sha);
 
-    res.json({ success: true, message: 'تم حذف المقطع الصوتي بنجاح' });
+    res.json({ success: true, message: 'تم حذف المقطع الصوتي بنجاح', key, voice_guides: guides });
   } catch (error) {
     console.error('Error deleting voice guide:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء حذف المقطع الصوتي' });
