@@ -18,7 +18,7 @@
     "has_invoice": true,
     "invoice_filename": "invoice_64a844a104556cf6.pdf",
     "invoice_original_name": "يوسف عبد العزيز.pdf",
-    "is_completed": false,
+    "is_completed": true,
     "created_at": "2026-09-26T06:46:11.555Z"
   },
   {
