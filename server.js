@@ -30,14 +30,21 @@ const cache = {
 // ============================================
 const defaultSettings = {
   store_name:    'أمير العفيفي للهواتف',
-  branch_name:   'فرع الشارقة 🇦🇪',
-  meta_title:    'استبيان رضا العملاء - أمير العفيفي للهواتف',
-  meta_desc:     'استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
-  welcome_desc:  'شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!',
+  branch_name:   'الشارقه - دبي',
+  meta_title:    'فاتورتك - أمير العفيفي للهواتف',
+  meta_desc:     'حمل فاتورتك  - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
+  wa_line1:      'شكرا لثقتكم فينا ❤️❤️',
+  wa_line2:      '',
+  wa_line3:      'حمل فاتورتك من الرابط ✅',
+  logo_url:      '/logo.png',
+  welcome_desc:  'حمل فاتورتك  - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
   discount_text: 'خصم 20%',
-  coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف (فرع الشارقة) في زيارتك القادمة',
+  coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة',
   maps_url:      'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6',
-  branches:      JSON.stringify([{ name: 'فرع الشارقة 🇦🇪', maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6' }]),
+  branches:      JSON.stringify([
+    { name: 'الشارقه', maps_url: 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6' },
+    { name: 'دبي', maps_url: '' }
+  ]),
   voice_guides:  JSON.stringify({})
 };
 
@@ -138,6 +145,60 @@ async function deleteFromGitHub(filePath, sha, message) {
   const res = await githubRequest('DELETE',
     `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, body);
   return res.status === 200;
+}
+
+async function readTextFromGitHub(filePath) {
+  const res = await githubRequest('GET',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_BRANCH}`);
+  if (res.status === 404) return null;
+  if (res.status !== 200) throw new Error(`GitHub read error: ${res.status}`);
+  const content = Buffer.from(res.data.content.replace(/\n/g, ''), 'base64').toString('utf8');
+  return { content, sha: res.data.sha };
+}
+
+async function writeTextToGitHub(filePath, text, sha, message) {
+  let existingSha = sha;
+  if (!existingSha) {
+    try {
+      const existing = await readTextFromGitHub(filePath);
+      if (existing) existingSha = existing.sha;
+    } catch (e) {}
+  }
+  const content = Buffer.from(text, 'utf8').toString('base64');
+  const body = { message: message || `Update ${filePath}`, content, branch: GITHUB_BRANCH };
+  if (existingSha) body.sha = existingSha;
+  const res = await githubRequest('PUT',
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`, body);
+  return res.data.content?.sha;
+}
+
+async function syncIndexHtmlMeta(settings) {
+  try {
+    const raw = await readTextFromGitHub('index.html');
+    if (!raw) return;
+    let html = raw.content;
+
+    const title = settings.meta_title || 'فاتورتك - أمير العفيفي للهواتف';
+    const desc = settings.meta_desc || 'حمل فاتورتك  - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات';
+    const logoUrl = 'https://amiralafify-invoic.netlify.app/logo.png';
+
+    html = html.replace(/<title id="page-title">.*?<\/title>/, `<title id="page-title">${title}</title>`);
+    html = html.replace(/<meta name="description" id="meta-description" content=".*?">/, `<meta name="description" id="meta-description" content="${desc}">`);
+    html = html.replace(/<meta property="og:title" id="og-title" content=".*?">/, `<meta property="og:title" id="og-title" content="${title}">`);
+    html = html.replace(/<meta property="og:description" id="og-description" content=".*?">/, `<meta property="og:description" id="og-description" content="${desc}">`);
+    if (html.includes('id="og-image"')) {
+      html = html.replace(/<meta property="og:image" id="og-image" content=".*?">/, `<meta property="og:image" id="og-image" content="${logoUrl}">`);
+    }
+
+    if (html !== raw.content) {
+      await writeTextToGitHub('index.html', html, raw.sha, 'Sync meta tags for social media previews');
+      try {
+        fs.writeFileSync(path.join(__dirname, 'index.html'), html, 'utf8');
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn('Could not sync index.html meta:', err.message);
+  }
 }
 
 // ============================================
@@ -296,9 +357,44 @@ app.post('/api/settings', async (req, res) => {
     }
     await persistSettings(updated, sha);
     res.json({ success: true, message: 'تم حفظ الإعدادات بنجاح!' });
+
+    // Sync index.html meta tags in background for social media crawlers
+    syncIndexHtmlMeta(updated).catch(e => console.warn('syncIndexHtmlMeta background error:', e));
   } catch (error) {
     console.error('Error saving settings:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ أثناء حفظ الإعدادات' });
+  }
+});
+
+// ============================================
+// API: Upload Store Logo
+// ============================================
+app.post('/api/logo', multerFree, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'يرجى اختيار صورة للشعار' });
+    }
+
+    // 1. Upload logo.png to root of GitHub repo
+    await writeBinaryToGitHub('logo.png', req.file.buffer, null, 'Update store logo');
+
+    // 2. Update settings.json with logo_url
+    const { settings, sha } = await getSettings(true);
+    settings.logo_url = `/logo.png?v=${Date.now()}`;
+    await persistSettings(settings, sha);
+
+    // 3. Write locally if possible
+    try {
+      fs.writeFileSync(path.join(__dirname, 'logo.png'), req.file.buffer);
+    } catch (e) {}
+
+    // 4. Sync index.html with new logo
+    syncIndexHtmlMeta(settings).catch(e => console.warn('syncIndexHtmlMeta error after logo:', e));
+
+    res.json({ success: true, message: 'تم تحديث الشعار بنجاح!', logo_url: settings.logo_url });
+  } catch (error) {
+    console.error('Error uploading logo:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء رفع الشعار' });
   }
 });
 
@@ -661,8 +757,9 @@ app.get(['/api/voice-guide', '/api/voice-guide/:key'], async (req, res) => {
       return res.status(404).json({ success: false, message: 'لا يوجد مقطع صوتي مخصص لهذا الزر' });
     }
 
-    // Redirect directly to GitHub raw content URL
-    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data/voice/${filename}`;
+    // Redirect directly to GitHub raw content URL with cache buster
+    const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/data/voice/${filename}?v=${Date.now()}`;
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.redirect(302, rawUrl);
   } catch (error) {
     console.error('Error fetching voice guide:', error);
