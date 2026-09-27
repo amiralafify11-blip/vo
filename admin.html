@@ -598,6 +598,30 @@
       </p>
 
       <div class="link-form" id="settings-form">
+        <!-- Logo Section -->
+        <div class="full-width" style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(0,168,255,0.06); border:1px solid rgba(0,168,255,0.22); border-radius:12px; padding:16px; flex-wrap:wrap; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:65px; height:65px; border-radius:12px; overflow:hidden; background:#0b1424; border:1.5px solid rgba(0,168,255,0.4); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+              <img id="admin-logo-preview" src="/logo.png" alt="شعار المتجر" style="max-width:100%; max-height:100%; object-fit:contain;">
+            </div>
+            <div>
+              <div style="font-weight:700; color:#e8f4ff; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
+                <span>🖼️</span> <span>شعار المتجر (اللوجو)</span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px;">
+                يظهر في معاينة الرابط عند إرساله عبر واتساب، فيسبوك، وجميع وسائل التواصل الاجتماعي.
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="uploadLogo(this)">
+            <button type="button" class="generate-btn" onclick="document.getElementById('logo-file-input').click()" style="padding:9px 18px; font-size:0.84rem; background:linear-gradient(135deg,#00a8ff,#0066ff); cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+              <span>📷</span> <span>تغيير اللوجو</span>
+            </button>
+            <span id="logo-upload-status" style="font-size:0.8rem; font-weight:700; display:none;"></span>
+          </div>
+        </div>
+
         <div>
           <label>اسم المتجر (الرئيسي)</label>
           <input type="text" id="setting-store-name" placeholder="مثال: أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
@@ -615,6 +639,29 @@
         <div class="full-width">
           <label>وصف الرابط في واتساب (الرسالة الترويجية التي تظهر في معاينة الرابط عند إرساله للعميل)</label>
           <textarea id="setting-meta-desc" rows="2" placeholder="اكتب النص الترويجي الذي يظهر في واتساب..." oninput="updateWhatsAppPreview()"></textarea>
+        </div>
+
+        <!-- WhatsApp Share Message Customization -->
+        <div class="full-width" style="background: rgba(37,211,102,0.07); border: 1px solid rgba(37,211,102,0.25); border-radius: 12px; padding: 16px; margin-top: 4px;">
+          <label style="color: #25d366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+            💬 تخصيص نص رسالة واتساب عند إرسال رابط الفاتورة للعميل
+          </label>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الأول (عنوان الرسالة)</label>
+              <input type="text" id="setting-wa-line1" placeholder="مثال: شكرا لثقتكم فينا ❤️❤️" oninput="updateWaPreview()">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الثالث (تحت الرابط)</label>
+              <input type="text" id="setting-wa-line2" placeholder="مثال: شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات" oninput="updateWaPreview()">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الرابع (الختام)</label>
+              <input type="text" id="setting-wa-line3" placeholder="مثال: حمل فاتورتك من الرابط ✅" oninput="updateWaPreview()">
+            </div>
+          </div>
+          <!-- Preview -->
+          <div style="margin-top: 12px; background: #111b21; border-radius: 8px; padding: 12px 14px; border-right: 4px solid #25d366; font-size: 0.83rem; color: #e9edef; line-height: 1.7; white-space: pre-line; direction: rtl;" id="wa-msg-preview">...</div>
         </div>
 
         <div class="full-width">
@@ -1311,7 +1358,11 @@
 
       tbody.innerHTML = links.map((link, i) => {
         const url = `${window.location.origin}/?t=${link.token}`;
-        const waText = `شكرا لثقتكم فينا ❤️❤️\n${url}\nحمل فاتورتك من الرابط ✅`;
+        const _s = window._adminSettings || {};
+        const waLine1 = (_s.wa_line1 || _s.meta_title || 'شكرا لثقتكم فينا ❤️❤️').trim();
+        const waLine2 = (_s.wa_line2 || _s.meta_desc || '').trim();
+        const waLine3 = (_s.wa_line3 || 'حمل فاتورتك من الرابط ✅').trim();
+        const waText = [waLine1, url, waLine2 ? waLine2 + '\n' + waLine3 : waLine3].filter(Boolean).join('\n');
         const waMsg = encodeURIComponent(waText);
         let waNum = (link.phone || '').replace(/[\s\-\(\)\+]/g, '');
         if (waNum.startsWith('05')) waNum = '971' + waNum.substring(1);
@@ -1467,13 +1518,17 @@
     // ========================================
     // Branch Management
     // ========================================
+    // Branch Management
+    // ========================================
     let currentBranches = [];
 
     function renderBranchesList(branches) {
-      currentBranches = (branches || []).map(b => {
-        if (typeof b === 'string') return { name: b, maps_url: '' };
-        return { name: b.name || '', maps_url: b.maps_url || '' };
-      });
+      if (branches) {
+        currentBranches = branches.map(b => {
+          if (typeof b === 'string') return { name: b, maps_url: '' };
+          return { name: b.name || '', maps_url: b.maps_url || '' };
+        });
+      }
 
       const container = document.getElementById('branches-list');
       if (!currentBranches.length) {
@@ -1482,21 +1537,36 @@
       }
 
       container.innerHTML = currentBranches.map((b, i) => `
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(0, 168, 255, 0.08); border:1px solid rgba(0, 168, 255, 0.25); border-radius:10px; padding:10px 14px;">
-          <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; flex-wrap:wrap;">
-            <span style="font-size:1rem;">🏪</span>
-            <span style="font-size:0.9rem; font-weight:700; color:#e8f4ff; white-space:nowrap;">${escapeHtml(b.name)}</span>
-            ${b.maps_url ? `
-              <a href="${escapeHtml(b.maps_url)}" target="_blank" rel="noopener" style="font-size:0.78rem; color:#00a8ff; text-decoration:none; display:inline-flex; align-items:center; gap:4px; background:rgba(0,168,255,0.15); border:1px solid rgba(0,168,255,0.3); padding:3px 8px; border-radius:6px;" title="فتح رابط الخريطة">
-                📍 رابط الخريطة
-              </a>
-            ` : '<span style="font-size:0.75rem; color:var(--text-muted);">(بدون رابط خريطة - سيستخدم الرابط العام)</span>'}
+        <div style="display:flex; align-items:center; gap:8px; background:rgba(0, 168, 255, 0.08); border:1px solid rgba(0, 168, 255, 0.25); border-radius:10px; padding:10px 12px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px; min-width:140px;">
+            <span style="font-size:1.1rem;">🏪</span>
+            <input type="text" value="${escapeHtml(b.name)}" oninput="currentBranches[${i}].name = this.value.trim()" placeholder="اسم الفرع" style="padding:6px 10px; font-size:0.88rem; font-weight:700; background:rgba(0,15,40,0.8); border:1px solid rgba(0,168,255,0.4); border-radius:6px; color:#e8f4ff; width:130px;">
           </div>
-          <button type="button" onclick="removeBranch(${i})" style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; border-radius:6px; padding:4px 10px; cursor:pointer; font-size:0.8rem; font-family:'Cairo',sans-serif;" title="حذف الفرع">
-            🗑️ حذف
-          </button>
+          <div style="flex:1; min-width:220px; display:flex; align-items:center; gap:6px;">
+            <input type="url" value="${escapeHtml(b.maps_url)}" oninput="currentBranches[${i}].maps_url = this.value.trim(); updateBranchTestBtn(${i})" placeholder="رابط لوكيشن جوجل ماب (https://maps.app.goo.gl/...)" style="padding:6px 10px; font-size:0.82rem; direction:ltr; text-align:left; background:rgba(0,15,40,0.8); border:1px solid rgba(0,168,255,0.4); border-radius:6px; color:#00d4ff; width:100%;">
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <a id="branch-test-link-${i}" href="${escapeHtml(b.maps_url || '#')}" target="_blank" rel="noopener" style="font-size:0.78rem; color:#00a8ff; text-decoration:none; display:${b.maps_url ? 'inline-flex' : 'none'}; align-items:center; gap:4px; background:rgba(0,168,255,0.15); border:1px solid rgba(0,168,255,0.3); padding:5px 10px; border-radius:6px; white-space:nowrap;" title="تجربة فتح اللوكيشن">
+              📍 تجربة الرابط
+            </a>
+            <button type="button" onclick="removeBranch(${i})" style="background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#f43f5e; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:0.8rem; font-family:'Cairo',sans-serif; white-space:nowrap;" title="حذف الفرع">
+              🗑️ حذف
+            </button>
+          </div>
         </div>
       `).join('');
+    }
+
+    function updateBranchTestBtn(i) {
+      const a = document.getElementById(`branch-test-link-${i}`);
+      if (!a) return;
+      const url = currentBranches[i]?.maps_url || '';
+      if (url && url.startsWith('http')) {
+        a.href = url;
+        a.style.display = 'inline-flex';
+      } else {
+        a.style.display = 'none';
+      }
     }
 
     function addBranch() {
@@ -1509,13 +1579,18 @@
         alert('يرجى كتابة اسم الفرع');
         return;
       }
-      if (currentBranches.some(b => b.name === name)) {
-        alert('هذا الفرع موجود بالفعل');
+      const existing = currentBranches.find(b => b.name === name);
+      if (existing) {
+        existing.maps_url = maps_url;
+        renderBranchesList();
+        nameInput.value = '';
+        mapsInput.value = '';
+        alert(`تم تحديث رابط لوكيشن "${name}" بنجاح! احفظ التعديلات بالضغط على زر "حفظ التعديلات".`);
         return;
       }
 
       currentBranches.push({ name, maps_url });
-      renderBranchesList(currentBranches);
+      renderBranchesList();
       nameInput.value = '';
       mapsInput.value = '';
     }
@@ -1523,7 +1598,7 @@
     function removeBranch(index) {
       if (!confirm(`هل أنت متأكد من حذف فرع "${currentBranches[index].name}"؟`)) return;
       currentBranches.splice(index, 1);
-      renderBranchesList(currentBranches);
+      renderBranchesList();
     }
 
     // ========================================
@@ -1534,11 +1609,25 @@
       const desc = document.getElementById('setting-meta-desc').value.trim() || 'استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات';
       document.getElementById('preview-meta-title').textContent = title;
       document.getElementById('preview-meta-desc').textContent = desc;
+      updateWaPreview();
+    }
+
+    function updateWaPreview() {
+      const line1 = document.getElementById('setting-wa-line1')?.value.trim() || 'شكرا لثقتكم فينا ❤️❤️';
+      const line2 = document.getElementById('setting-wa-line2')?.value.trim() || '';
+      const line3 = document.getElementById('setting-wa-line3')?.value.trim() || 'حمل فاتورتك من الرابط ✅';
+      const preview = document.getElementById('wa-msg-preview');
+      if (!preview) return;
+      const sampleUrl = `${window.location.origin}/?t=7d79f17d04c62d3c`;
+      const parts = [line1, sampleUrl];
+      if (line2) parts.push(line2);
+      if (line3) parts.push(line3);
+      preview.textContent = parts.join('\n');
     }
 
     async function loadSettingsAdmin() {
       try {
-        const res = await fetch('/api/settings');
+        const res = await fetch(`/api/settings?refresh=1&t=${Date.now()}`);
         const data = await res.json();
         if (!data.success || !data.data) return;
         const s = data.data;
@@ -1552,8 +1641,37 @@
         document.getElementById('setting-coupon-desc').value = s.coupon_desc || '';
         document.getElementById('setting-maps-url').value = s.maps_url || '';
 
+        if (document.getElementById('setting-wa-line1')) {
+          document.getElementById('setting-wa-line1').value = s.wa_line1 || 'شكرا لثقتكم فينا ❤️❤️';
+        }
+        if (document.getElementById('setting-wa-line2')) {
+          document.getElementById('setting-wa-line2').value = s.wa_line2 || '';
+        }
+        if (document.getElementById('setting-wa-line3')) {
+          document.getElementById('setting-wa-line3').value = s.wa_line3 || 'حمل فاتورتك من الرابط ✅';
+        }
+
+        if (s.logo_url) {
+          const lp = document.getElementById('admin-logo-preview');
+          if (lp) lp.src = s.logo_url;
+        }
+
+        // Store globally for renderLinks() WhatsApp message builder
+        window._adminSettings = s;
+
         try {
-          const branches = s.branches ? JSON.parse(s.branches) : [];
+          let branches = s.branches ? JSON.parse(s.branches) : [];
+          // If branches were saved as plain strings, convert to objects and fill default maps url for Sharjah
+          branches = branches.map(b => {
+            if (typeof b === 'string') {
+              const defaultUrl = (b.includes('الشارق') || b.includes('شارق')) ? (s.maps_url || 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6') : '';
+              return { name: b, maps_url: defaultUrl };
+            }
+            if (b && !b.maps_url && (b.name?.includes('الشارق') || b.name?.includes('شارق'))) {
+              b.maps_url = s.maps_url || 'https://maps.app.goo.gl/1UkyYkVRMNbsEvah6';
+            }
+            return b;
+          });
           renderBranchesList(branches);
         } catch (e) {
           renderBranchesList([]);
@@ -1859,6 +1977,9 @@
         branch_name: document.getElementById('setting-branch-name').value.trim(),
         meta_title: document.getElementById('setting-meta-title').value.trim(),
         meta_desc: document.getElementById('setting-meta-desc').value.trim(),
+        wa_line1: document.getElementById('setting-wa-line1')?.value.trim() || 'شكرا لثقتكم فينا ❤️❤️',
+        wa_line2: document.getElementById('setting-wa-line2')?.value.trim() || '',
+        wa_line3: document.getElementById('setting-wa-line3')?.value.trim() || 'حمل فاتورتك من الرابط ✅',
         welcome_desc: document.getElementById('setting-welcome-desc').value.trim(),
         discount_text: document.getElementById('setting-discount-text').value.trim(),
         coupon_desc: document.getElementById('setting-coupon-desc').value.trim(),
@@ -1875,9 +1996,12 @@
         const data = await res.json();
 
         if (data.success) {
+          window._adminSettings = { ...(window._adminSettings || {}), ...payload };
           status.style.display = 'inline';
           status.style.color = '#10b981';
           status.textContent = '✅ ' + (data.message || 'تم حفظ التعديلات بنجاح!');
+          // Re-render links table so WhatsApp links immediately update with the new text
+          loadLinks();
         } else {
           status.style.display = 'inline';
           status.style.color = '#ef4444';
@@ -1891,6 +2015,48 @@
         btn.disabled = false;
         btn.textContent = '💾 حفظ التعديلات';
         setTimeout(() => { status.style.display = 'none'; }, 4000);
+      }
+    }
+
+    async function uploadLogo(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const status = document.getElementById('logo-upload-status');
+      if (status) {
+        status.style.display = 'inline';
+        status.style.color = '#00a8ff';
+        status.textContent = '⏳ جاري رفع الشعار...';
+      }
+
+      const formData = new FormData();
+      formData.append('logo', file);
+
+      try {
+        const res = await fetch('/api/logo', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+          if (status) {
+            status.style.color = '#10b981';
+            status.textContent = '✅ تم تحديث اللوجو بنجاح!';
+          }
+          const preview = document.getElementById('admin-logo-preview');
+          if (preview) preview.src = (data.logo_url || '/logo.png') + '?v=' + Date.now();
+          if (window._adminSettings) window._adminSettings.logo_url = data.logo_url;
+        } else {
+          if (status) {
+            status.style.color = '#ef4444';
+            status.textContent = '❌ ' + (data.message || 'فشل رفع الشعار');
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        if (status) {
+          status.style.color = '#ef4444';
+          status.textContent = '❌ تعذر الاتصال بالخادم لرفع الشعار';
+        }
+      } finally {
+        input.value = '';
+        setTimeout(() => { if (status) status.style.display = 'none'; }, 4000);
       }
     }
 
