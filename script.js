@@ -298,13 +298,15 @@ function stopRecording() {
 // ========================================
 async function loadSettings() {
   try {
-    const res = await fetch('/api/settings');
+    const res = await fetch(`/api/settings?refresh=1&t=${Date.now()}`);
     const data = await res.json();
     if (!data.success || !data.data) return;
     const s = data.data;
 
     if (s.meta_title) {
       document.title = s.meta_title;
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = s.meta_title;
       const ogTitle = document.getElementById('og-title');
       if (ogTitle) ogTitle.setAttribute('content', s.meta_title);
     }
@@ -313,6 +315,10 @@ async function loadSettings() {
       if (metaDesc) metaDesc.setAttribute('content', s.meta_desc);
       const ogDesc = document.getElementById('og-description');
       if (ogDesc) ogDesc.setAttribute('content', s.meta_desc);
+    }
+    if (s.logo_url) {
+      const ogImage = document.getElementById('og-image');
+      if (ogImage) ogImage.setAttribute('content', s.logo_url.startsWith('http') ? s.logo_url : window.location.origin + s.logo_url);
     }
     if (s.store_name) {
       const el = document.getElementById('header-store-name');
