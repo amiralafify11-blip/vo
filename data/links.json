@@ -18,7 +18,7 @@
     "has_invoice": true,
     "invoice_filename": "invoice_8d4f6e4b4daab485.pdf",
     "invoice_original_name": "محمد على محمد.pdf",
-    "is_completed": false,
+    "is_completed": true,
     "created_at": "2026-09-27T08:39:17.028Z"
   },
   {
