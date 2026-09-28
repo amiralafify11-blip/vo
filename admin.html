@@ -518,15 +518,66 @@
     <div class="orb"></div>
   </div>
 
-  <div class="admin-container">
-    <div class="admin-header">
-      <img src="logo.png" alt="Logo"
-        style="width:54px;height:54px;border-radius:14px;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 2px rgba(0,168,255,0.35), 0 4px 16px rgba(0,100,255,0.3);">
-      <div>
-        <h1>📊 لوحة إدارة الاستبيانات</h1>
-        <h2 id="admin-store-name-display" style="font-size: 0.95rem; color: var(--accent-purple); margin-top:2px;">أمير العفيفي للهواتف</h2>
-        <p>عرض وتحليل ردود العملاء وإنشاء روابط الاستبيان الفريدة</p>
+  <!-- Login Screen -->
+  <div id="login-screen" style="display:flex; min-height:100vh; align-items:center; justify-content:center; padding:20px; position:relative; z-index:10;">
+    <div style="background:rgba(11,20,38,0.88); backdrop-filter:blur(24px); border:1.5px solid rgba(0,168,255,0.3); border-radius:24px; padding:36px 30px; width:100%; max-width:440px; box-shadow:0 15px 45px rgba(0,0,0,0.65), 0 0 35px rgba(0,168,255,0.15); text-align:center;">
+      <div style="width:84px; height:84px; margin:0 auto 16px; border-radius:20px; overflow:hidden; background:#0b1424; border:2px solid rgba(0,168,255,0.5); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(0,100,255,0.35);">
+        <img src="logo_v2.png" alt="Logo" style="max-width:100%; max-height:100%; object-fit:contain;">
       </div>
+      <h1 style="font-size:1.35rem; font-weight:800; color:#e8f4ff; margin-bottom:6px; font-family:'Cairo',sans-serif;">لوحة التحكم الإدارية</h1>
+      <p style="font-size:0.84rem; color:var(--text-muted); margin-bottom:22px; font-family:'Cairo',sans-serif;">يرجى تسجيل الدخول للوصول إلى إدارة الاستبيانات والفواتير</p>
+
+      <form id="admin-login-form" onsubmit="handleAdminLogin(event)" style="display:flex; flex-direction:column; gap:14px; text-align:right;">
+        <div>
+          <label style="font-size:0.83rem; color:#cbd5e1; margin-bottom:5px; display:block; font-weight:700;">اسم المستخدم</label>
+          <div style="position:relative;">
+            <input type="text" id="login-username" placeholder="أدخل اسم المستخدم" required autocomplete="username"
+              style="width:100%; padding:11px 14px 11px 40px; background:rgba(0,15,40,0.75); border:1px solid rgba(0,168,255,0.35); border-radius:12px; color:#e8f4ff; font-size:0.92rem; font-family:'Cairo',sans-serif; outline:none; transition:all 0.2s;">
+            <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:1.05rem; opacity:0.7;">👤</span>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.83rem; color:#cbd5e1; margin-bottom:5px; display:block; font-weight:700;">كلمة المرور</label>
+          <div style="position:relative;">
+            <input type="password" id="login-password" placeholder="أدخل كلمة المرور" required autocomplete="current-password"
+              style="width:100%; padding:11px 40px 11px 14px; background:rgba(0,15,40,0.75); border:1px solid rgba(0,168,255,0.35); border-radius:12px; color:#e8f4ff; font-size:0.92rem; font-family:'Cairo',sans-serif; outline:none; transition:all 0.2s;">
+            <button type="button" onclick="togglePasswordVisibility()" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem; padding:4px;" title="إظهار/إخفاء">
+              👁️
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; color:var(--text-muted); margin-top:2px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="login-remember" checked style="accent-color:#00a8ff;">
+            <span>تذكر تسجيل الدخول</span>
+          </label>
+        </div>
+
+        <div id="login-error-msg" style="display:none; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.35); color:#f43f5e; padding:9px 12px; border-radius:10px; font-size:0.82rem; text-align:center;"></div>
+
+        <button type="submit" id="login-submit-btn" style="width:100%; padding:12px; background:linear-gradient(135deg, #00a8ff, #0066ff); border:none; border-radius:12px; color:#fff; font-size:0.98rem; font-weight:700; font-family:'Cairo',sans-serif; cursor:pointer; box-shadow:0 4px 18px rgba(0,100,255,0.4); margin-top:4px; transition:all 0.25s;">
+          🚀 تسجيل الدخول
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-container" id="admin-dashboard" style="display:none;">
+    <div class="admin-header" style="justify-content:space-between; flex-wrap:wrap; gap:12px;">
+      <div style="display:flex; align-items:center; gap:14px;">
+        <img src="logo_v2.png" alt="Logo"
+          style="width:54px;height:54px;border-radius:14px;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 2px rgba(0,168,255,0.35), 0 4px 16px rgba(0,100,255,0.3);">
+        <div>
+          <h1>📊 لوحة إدارة الاستبيانات</h1>
+          <h2 id="admin-store-name-display" style="font-size: 0.95rem; color: var(--accent-purple); margin-top:2px;">أمير العفيفي للهواتف</h2>
+          <p>عرض وتحليل ردود العملاء وإنشاء روابط الاستبيان الفريدة</p>
+        </div>
+      </div>
+      <button type="button" onclick="logoutAdmin()" class="copy-btn" style="background:rgba(244,63,94,0.18); border:1px solid rgba(244,63,94,0.4); color:#f43f5e; padding:8px 16px; font-size:0.84rem; display:inline-flex; align-items:center; gap:6px; cursor:pointer; border-radius:10px;" title="تسجيل الخروج من لوحة التحكم">
+        🚪 تسجيل الخروج
+      </button>
     </div>
 
     <!-- Link Generator -->
@@ -741,6 +792,36 @@
               🔗 <span>amiralafify-invoice.netlify.app</span>
             </div>
           </div>
+        <!-- Admin Security / Login Credentials -->
+        <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(139, 92, 246, 0.07); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-lg);">
+          <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
+            🔐 بيانات تسجيل الدخول لحساب الإدارة
+          </label>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 12px;">
+            يمكنك تغيير اسم المستخدم وكلمة المرور الخاصة بلوحة التحكم من هنا لحماية بياناتك من أي وصول غير مصرح به.
+          </p>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:0.82rem; color:#cbd5e1; margin-bottom:4px; display:block;">اسم المستخدم الحالي أو الجديد</label>
+              <input type="text" id="setting-admin-username" placeholder="admin">
+            </div>
+            <div>
+              <label style="font-size:0.82rem; color:#cbd5e1; margin-bottom:4px; display:block;">كلمة المرور الجديدة</label>
+              <input type="password" id="setting-admin-password" placeholder="اتركه فارغاً إذا لا تريد تغييره">
+            </div>
+          </div>
+        </div>
+
+        <!-- Preferred Domain Selection -->
+        <div class="full-width" style="margin-top: 14px; padding: 16px; background: rgba(0, 168, 255, 0.05); border: 1px solid rgba(0, 168, 255, 0.2); border-radius: var(--radius-lg);">
+          <label style="font-size: 0.88rem; color: #e8f4ff; margin-bottom: 6px; display: block; font-weight: 700;">
+            🌐 نطاق الروابط عند النسخ ومشاركة واتساب (الدومين)
+          </label>
+          <select id="setting-preferred-domain" style="width: 100%; padding: 10px 14px; background: rgba(0,15,40,0.85); border: 1px solid rgba(0,168,255,0.35); border-radius: 10px; color: #e8f4ff; font-family: 'Cairo', sans-serif;">
+            <option value="https://amiralafify-invoic.netlify.app">https://amiralafify-invoic.netlify.app (رابط Netlify الرسمي)</option>
+            <option value="https://vo-3hp3.onrender.com">https://vo-3hp3.onrender.com (رابط Render المباشر)</option>
+            <option value="auto">تلقائياً حسب الرابط المفتوح في المتصفح حالياً</option>
+          </select>
         </div>
 
         <div class="full-width" style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
@@ -846,6 +927,160 @@
   <script>
     let surveyData = [];
     let lastGeneratedUrl = '';
+
+    // ========================================
+    // Authentication & Session Management
+    // ========================================
+    let adminToken = localStorage.getItem('vo_admin_token') || sessionStorage.getItem('vo_admin_token') || '';
+
+    function showLoginScreen(errorMsg = '') {
+      const loginScreen = document.getElementById('login-screen');
+      const dashboard = document.getElementById('admin-dashboard');
+      if (loginScreen) loginScreen.style.display = 'flex';
+      if (dashboard) dashboard.style.display = 'none';
+      const errEl = document.getElementById('login-error-msg');
+      if (errEl) {
+        if (errorMsg) {
+          errEl.textContent = errorMsg;
+          errEl.style.display = 'block';
+        } else {
+          errEl.style.display = 'none';
+        }
+      }
+    }
+
+    function showDashboard() {
+      const loginScreen = document.getElementById('login-screen');
+      const dashboard = document.getElementById('admin-dashboard');
+      if (loginScreen) loginScreen.style.display = 'none';
+      if (dashboard) dashboard.style.display = 'block';
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('login-password');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    async function handleAdminLogin(e) {
+      if (e) e.preventDefault();
+      const usernameInput = document.getElementById('login-username');
+      const passwordInput = document.getElementById('login-password');
+      const rememberInput = document.getElementById('login-remember');
+      const btn = document.getElementById('login-submit-btn');
+      const errEl = document.getElementById('login-error-msg');
+
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      const password = passwordInput ? passwordInput.value : '';
+      const remember = rememberInput ? rememberInput.checked : true;
+
+      if (!username || !password) {
+        if (errEl) {
+          errEl.textContent = 'يرجى إدخال اسم المستخدم وكلمة المرور';
+          errEl.style.display = 'block';
+        }
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ جارٍ التحقق...';
+      }
+      if (errEl) errEl.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.token) {
+          adminToken = data.token;
+          if (remember) {
+            localStorage.setItem('vo_admin_token', adminToken);
+            sessionStorage.removeItem('vo_admin_token');
+          } else {
+            sessionStorage.setItem('vo_admin_token', adminToken);
+            localStorage.removeItem('vo_admin_token');
+          }
+          showDashboard();
+          loadData();
+          loadLinks();
+          loadSettingsAdmin();
+        } else {
+          if (errEl) {
+            errEl.textContent = data.message || 'اسم المستخدم أو كلمة المرور غير صحيحة';
+            errEl.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (errEl) {
+          errEl.textContent = 'تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً';
+          errEl.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🚀 تسجيل الدخول';
+        }
+      }
+    }
+
+    function logoutAdmin() {
+      if (!confirm('هل تريد بالتأكيد تسجيل الخروج؟')) return;
+      adminToken = '';
+      localStorage.removeItem('vo_admin_token');
+      sessionStorage.removeItem('vo_admin_token');
+      showLoginScreen();
+    }
+
+    async function checkAuthOnLoad() {
+      if (!adminToken) {
+        showLoginScreen();
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/check', {
+          headers: { 'x-admin-token': adminToken }
+        });
+        if (res.ok) {
+          showDashboard();
+          loadData();
+          loadLinks();
+          loadSettingsAdmin();
+        } else {
+          adminToken = '';
+          localStorage.removeItem('vo_admin_token');
+          sessionStorage.removeItem('vo_admin_token');
+          showLoginScreen('يرجى تسجيل الدخول للمتابعة');
+        }
+      } catch (e) {
+        showLoginScreen();
+      }
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+      options.headers = options.headers || {};
+      if (adminToken) {
+        if (options.headers instanceof Headers) {
+          options.headers.set('x-admin-token', adminToken);
+        } else {
+          options.headers['x-admin-token'] = adminToken;
+        }
+      }
+      const res = await fetch(url, options);
+      if (res.status === 401) {
+        adminToken = '';
+        localStorage.removeItem('vo_admin_token');
+        sessionStorage.removeItem('vo_admin_token');
+        showLoginScreen('انتهت صلاحية الجلسة، يرجى تسجيل الدخول مجدداً');
+        throw new Error('Unauthorized');
+      }
+      return res;
+    }
+
 
     // ========================================
     // File Upload & PDF Automatic Extraction
@@ -1141,7 +1376,7 @@
           formData.append('invoice', fileInput.files[0]);
         }
 
-        const res = await fetch('/api/links', {
+        const res = await fetchWithAuth('/api/links', {
           method: 'POST',
           body: formData
         });
@@ -1149,14 +1384,18 @@
         const result = await res.json();
 
         if (result.success) {
-          const baseUrl = window.location.origin;
+          const _s = window._adminSettings || {};
+          const baseUrl = (_s.preferred_domain || window.location.origin).replace(/\/+$/, '');
           lastGeneratedUrl = `${baseUrl}/?t=${result.token}`;
 
           document.getElementById('generated-url').textContent = lastGeneratedUrl;
           document.getElementById('link-result').classList.add('show');
 
-          // WhatsApp share with exact requested message format
-          const waText = `شكرا لثقتكم فينا ❤️❤️\n${lastGeneratedUrl}\nحمل فاتورتك من الرابط ✅`;
+          // WhatsApp share with customizable template from settings
+          const waLine1 = (_s.wa_line1 || _s.meta_title || 'شكرا لثقتكم فينا ❤️❤️').trim();
+          const waLine2 = (_s.wa_line2 || _s.meta_desc || '').trim();
+          const waLine3 = (_s.wa_line3 || 'حمل فاتورتك من الرابط ✅').trim();
+          const waText = [waLine1, lastGeneratedUrl, waLine2 ? waLine2 + '\n' + waLine3 : waLine3].filter(Boolean).join('\n');
           const waMsg = encodeURIComponent(waText);
           let waNumber = phone.replace(/[\s\-\(\)\+]/g, '');
           if (waNumber.startsWith('05')) {
@@ -1294,7 +1533,7 @@
       }
 
       try {
-        const res = await fetch(`/api/links/${id}`, { method: 'DELETE' });
+        const res = await fetchWithAuth(`/api/links/${id}`, { method: 'DELETE' });
         const result = await res.json();
         if (result.success) {
           alert('تم حذف الرابط بنجاح');
@@ -1317,7 +1556,7 @@
       }
 
       try {
-        const res = await fetch(`/api/surveys/${id}`, { method: 'DELETE' });
+        const res = await fetchWithAuth(`/api/surveys/${id}`, { method: 'DELETE' });
         const result = await res.json();
         if (result.success) {
           alert('تم حذف الرد بنجاح');
@@ -1339,7 +1578,7 @@
     async function loadLinks() {
       try {
         const url = _initialLoad ? '/api/links?refresh=1' : '/api/links';
-        const res = await fetch(url);
+        const res = await fetchWithAuth(url);
         const data = await res.json();
         if (data.success) {
           renderLinks(data.data);
@@ -1357,7 +1596,9 @@
       }
 
       tbody.innerHTML = links.map((link, i) => {
-        const url = `${window.location.origin}/?t=${link.token}`;
+        const _s = window._adminSettings || {};
+        const baseUrl = (_s.preferred_domain || window.location.origin).replace(/\/+$/, '');
+        const url = `${baseUrl}/?t=${link.token}`;
         const _s = window._adminSettings || {};
         const waLine1 = (_s.wa_line1 || _s.meta_title || 'شكرا لثقتكم فينا ❤️❤️').trim();
         const waLine2 = (_s.wa_line2 || _s.meta_desc || '').trim();
@@ -1391,10 +1632,10 @@
     async function loadData() {
       try {
         const refreshParam = _initialLoad ? '?refresh=1' : '';
-        const surveysRes = await fetch(`/api/surveys${refreshParam}`);
+        const surveysRes = await fetchWithAuth(`/api/surveys${refreshParam}`);
         const surveysData = await surveysRes.json();
 
-        const statsRes = await fetch('/api/stats');
+        const statsRes = await fetchWithAuth('/api/stats');
         const statsData = await statsRes.json();
 
         if (surveysData.success) {
@@ -1510,10 +1751,8 @@
       link.click();
     }
 
-    // Load all data on page load
-    loadData();
-    loadLinks();
-    loadSettingsAdmin();
+    // Check authentication and load data
+    checkAuthOnLoad();
 
     // ========================================
     // Branch Management
@@ -1627,7 +1866,7 @@
 
     async function loadSettingsAdmin() {
       try {
-        const res = await fetch(`/api/settings?refresh=1&t=${Date.now()}`);
+        const res = await fetchWithAuth(`/api/settings?refresh=1&t=${Date.now()}`);
         const data = await res.json();
         if (!data.success || !data.data) return;
         const s = data.data;
@@ -1654,6 +1893,16 @@
         if (s.logo_url) {
           const lp = document.getElementById('admin-logo-preview');
           if (lp) lp.src = s.logo_url;
+        }
+
+        if (document.getElementById('setting-admin-username') && s.admin_username) {
+          document.getElementById('setting-admin-username').value = s.admin_username;
+        }
+        if (document.getElementById('setting-admin-password') && s.admin_password) {
+          document.getElementById('setting-admin-password').value = s.admin_password;
+        }
+        if (document.getElementById('setting-preferred-domain')) {
+          document.getElementById('setting-preferred-domain').value = s.preferred_domain || 'https://amiralafify-invoic.netlify.app';
         }
 
         // Store globally for renderLinks() WhatsApp message builder
@@ -1870,7 +2119,7 @@
         const formData = new FormData();
         formData.append('voice_guide', blob, `voice_${key}.webm`);
 
-        const res = await fetch(`/api/voice-guide/${key}`, {
+        const res = await fetchWithAuth(`/api/voice-guide/${key}`, {
           method: 'POST',
           body: formData
         });
@@ -1914,7 +2163,7 @@
         const formData = new FormData();
         formData.append('voice_guide', file, file.name);
 
-        const res = await fetch(`/api/voice-guide/${key}`, {
+        const res = await fetchWithAuth(`/api/voice-guide/${key}`, {
           method: 'POST',
           body: formData
         });
@@ -1950,7 +2199,7 @@
       if (!confirm('هل أنت متأكد من حذف هذا المقطع الصوتي؟ سيعود هذا الزر للقراءة الآلية (TTS).')) return;
 
       try {
-        const res = await fetch(`/api/voice-guide/${key}`, { method: 'DELETE' });
+        const res = await fetchWithAuth(`/api/voice-guide/${key}`, { method: 'DELETE' });
         const data = await res.json();
         if (data.success) {
           delete adminVoiceGuides[key];
@@ -1984,11 +2233,17 @@
         discount_text: document.getElementById('setting-discount-text').value.trim(),
         coupon_desc: document.getElementById('setting-coupon-desc').value.trim(),
         maps_url: document.getElementById('setting-maps-url').value.trim(),
-        branches: JSON.stringify(currentBranches)
+        branches: JSON.stringify(currentBranches),
+        admin_username: document.getElementById('setting-admin-username')?.value.trim() || 'admin',
+        preferred_domain: (document.getElementById('setting-preferred-domain')?.value.trim() || 'https://amiralafify-invoic.netlify.app').replace(/\/+$/, '')
       };
+      const adminPassVal = document.getElementById('setting-admin-password')?.value;
+      if (adminPassVal) {
+        payload.admin_password = adminPassVal;
+      }
 
       try {
-        const res = await fetch('/api/settings', {
+        const res = await fetchWithAuth('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -1997,6 +2252,14 @@
 
         if (data.success) {
           window._adminSettings = { ...(window._adminSettings || {}), ...payload };
+          if (data.token) {
+            adminToken = data.token;
+            if (localStorage.getItem('vo_admin_token')) {
+              localStorage.setItem('vo_admin_token', adminToken);
+            } else {
+              sessionStorage.setItem('vo_admin_token', adminToken);
+            }
+          }
           status.style.display = 'inline';
           status.style.color = '#10b981';
           status.textContent = '✅ ' + (data.message || 'تم حفظ التعديلات بنجاح!');
@@ -2032,7 +2295,7 @@
       formData.append('logo', file);
 
       try {
-        const res = await fetch('/api/logo', { method: 'POST', body: formData });
+        const res = await fetchWithAuth('/api/logo', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
           if (status) {
@@ -2089,7 +2352,12 @@
     }
 
     // Auto-refresh every 30 seconds
-    setInterval(() => { loadData(); loadLinks(); }, 30000);
+    setInterval(() => {
+      if (adminToken && document.getElementById('admin-dashboard') && document.getElementById('admin-dashboard').style.display !== 'none') {
+        loadData();
+        loadLinks();
+      }
+    }, 30000);
   </script>
 </body>
 </html>
