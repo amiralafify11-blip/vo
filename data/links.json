@@ -150,7 +150,7 @@
     "has_invoice": true,
     "invoice_filename": "invoice_9d1cc4e5b7e7c14e.pdf",
     "invoice_original_name": "مريم احمد.pdf",
-    "is_completed": false,
+    "is_completed": true,
     "created_at": "2026-09-27T08:41:58.481Z"
   },
   {
