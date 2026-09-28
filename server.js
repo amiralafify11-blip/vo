@@ -36,7 +36,9 @@ const defaultSettings = {
   wa_line1:      'شكرا لثقتكم فينا ❤️❤️',
   wa_line2:      '',
   wa_line3:      'حمل فاتورتك من الرابط ✅',
-  logo_url:      '/logo.png',
+  logo_url:      '/logo_v2.png',
+  admin_username:'admin',
+  admin_password:'admin',
   welcome_desc:  'حمل فاتورتك  - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات',
   discount_text: 'خصم 20%',
   coupon_desc:   'على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة',
@@ -180,7 +182,7 @@ async function syncIndexHtmlMeta(settings) {
 
     const title = settings.meta_title || 'فاتورتك - أمير العفيفي للهواتف';
     const desc = settings.meta_desc || 'حمل فاتورتك  - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات';
-    const logoUrl = 'https://amiralafify-invoic.netlify.app/logo.png';
+    const logoUrl = 'https://vo-3hp3.onrender.com/logo_v2.png';
 
     html = html.replace(/<title id="page-title">.*?<\/title>/, `<title id="page-title">${title}</title>`);
     html = html.replace(/<meta name="description" id="meta-description" content=".*?">/, `<meta name="description" id="meta-description" content="${desc}">`);
@@ -188,6 +190,8 @@ async function syncIndexHtmlMeta(settings) {
     html = html.replace(/<meta property="og:description" id="og-description" content=".*?">/, `<meta property="og:description" id="og-description" content="${desc}">`);
     if (html.includes('id="og-image"')) {
       html = html.replace(/<meta property="og:image" id="og-image" content=".*?">/, `<meta property="og:image" id="og-image" content="${logoUrl}">`);
+      html = html.replace(/<meta property="og:image:secure_url" content=".*?">/, `<meta property="og:image:secure_url" content="${logoUrl}">`);
+      html = html.replace(/<meta name="twitter:image" content=".*?">/, `<meta name="twitter:image" content="${logoUrl}">`);
     }
 
     if (html !== raw.content) {
@@ -332,13 +336,69 @@ function indexOf(buf, search, offset) {
 }
 
 // ============================================
+// Admin Authentication Helper & Middleware
+// ============================================
+function getAdminToken(user, pass) {
+  return crypto.createHash('sha256').update(`${(user || '').trim()}:${(pass || '').trim()}:secret-survey-token`).digest('hex');
+}
+
+async function verifyAdminAuth(req) {
+  const token = req.headers['x-admin-token'] || (req.headers['authorization'] || '').replace(/^Bearer\s+/, '');
+  if (!token) return false;
+  const { settings } = await getSettings();
+  const user = settings.admin_username || process.env.ADMIN_USERNAME || 'admin';
+  const pass = settings.admin_password || process.env.ADMIN_PASSWORD || 'admin';
+  return token === getAdminToken(user, pass);
+}
+
+async function requireAdminAuth(req, res, next) {
+  const isAuth = await verifyAdminAuth(req);
+  if (isAuth) return next();
+  return res.status(401).json({ success: false, message: 'جلسة تسجيل الدخول منتهية أو غير مصرح بها. يرجى تسجيل الدخول.' });
+}
+
+// ============================================
+// API: Admin Authentication
+// ============================================
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body || {};
+    const { settings } = await getSettings();
+    const user = settings.admin_username || process.env.ADMIN_USERNAME || 'admin';
+    const pass = settings.admin_password || process.env.ADMIN_PASSWORD || 'admin';
+
+    if (username && password && username.trim() === user.trim() && password.trim() === pass.trim()) {
+      const token = getAdminToken(user, pass);
+      return res.json({ success: true, token, username: user.trim(), message: 'تم تسجيل الدخول بنجاح!' });
+    }
+    return res.status(401).json({ success: false, message: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تسجيل الدخول' });
+  }
+});
+
+app.get('/api/admin/check', async (req, res) => {
+  const isAuth = await verifyAdminAuth(req);
+  if (isAuth) {
+    return res.json({ success: true, authenticated: true });
+  }
+  return res.status(401).json({ success: false, authenticated: false });
+});
+
+// ============================================
 // API: Get Settings
 // ============================================
 app.get('/api/settings', async (req, res) => {
   try {
     const refresh = !!req.query.refresh;
     const { settings } = await getSettings(refresh);
-    res.json({ success: true, data: settings });
+    const isAuth = await verifyAdminAuth(req);
+    const safeSettings = { ...settings };
+    if (!isAuth) {
+      delete safeSettings.admin_password;
+    }
+    res.json({ success: true, data: safeSettings });
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).json({ success: false, message: 'حدث خطأ في جلب الإعدادات' });
@@ -348,7 +408,7 @@ app.get('/api/settings', async (req, res) => {
 // ============================================
 // API: Save Settings
 // ============================================
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', requireAdminAuth, async (req, res) => {
   try {
     const { settings, sha } = await getSettings(true);
     const updated = { ...settings };
@@ -369,22 +429,24 @@ app.post('/api/settings', async (req, res) => {
 // ============================================
 // API: Upload Store Logo
 // ============================================
-app.post('/api/logo', multerFree, async (req, res) => {
+app.post('/api/logo', requireAdminAuth, multerFree, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'يرجى اختيار صورة للشعار' });
     }
 
-    // 1. Upload logo.png to root of GitHub repo
+    // 1. Upload both logo_v2.png and logo.png to root of GitHub repo
+    await writeBinaryToGitHub('logo_v2.png', req.file.buffer, null, 'Update store logo v2');
     await writeBinaryToGitHub('logo.png', req.file.buffer, null, 'Update store logo');
 
     // 2. Update settings.json with logo_url
     const { settings, sha } = await getSettings(true);
-    settings.logo_url = `/logo.png?v=${Date.now()}`;
+    settings.logo_url = `/logo_v2.png?v=${Date.now()}`;
     await persistSettings(settings, sha);
 
     // 3. Write locally if possible
     try {
+      fs.writeFileSync(path.join(__dirname, 'logo_v2.png'), req.file.buffer);
       fs.writeFileSync(path.join(__dirname, 'logo.png'), req.file.buffer);
     } catch (e) {}
 
@@ -401,7 +463,7 @@ app.post('/api/logo', multerFree, async (req, res) => {
 // ============================================
 // API: Create customer link (from admin)
 // ============================================
-app.post('/api/links', multerFree, async (req, res) => {
+app.post('/api/links', requireAdminAuth, multerFree, async (req, res) => {
   try {
     const { customer_name, phone } = req.body;
 
@@ -491,7 +553,7 @@ app.get('/api/links/:token', async (req, res) => {
 // ============================================
 // API: Get all links (admin)
 // ============================================
-app.get('/api/links', async (req, res) => {
+app.get('/api/links', requireAdminAuth, async (req, res) => {
   try {
     const refresh = !!req.query.refresh;
     const { links } = await getLinks(refresh);
@@ -505,7 +567,7 @@ app.get('/api/links', async (req, res) => {
 // ============================================
 // API: Delete a customer link (admin)
 // ============================================
-app.delete('/api/links/:id', async (req, res) => {
+app.delete('/api/links/:id', requireAdminAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { links, sha } = await getLinks(true);
@@ -681,7 +743,7 @@ app.get('/api/recordings/:surveyId', async (req, res) => {
 // ============================================
 const VALID_VOICE_KEYS = ['main', 'personal', 'purchase', 'source', 'emirate', 'experience', 'rating', 'invoice'];
 
-app.post(['/api/voice-guide', '/api/voice-guide/:key'], multerFree, async (req, res) => {
+app.post(['/api/voice-guide', '/api/voice-guide/:key'], requireAdminAuth, multerFree, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'يرجى إرفاق ملف صوتي' });
@@ -767,7 +829,7 @@ app.get(['/api/voice-guide', '/api/voice-guide/:key'], async (req, res) => {
   }
 });
 
-app.delete(['/api/voice-guide', '/api/voice-guide/:key'], async (req, res) => {
+app.delete(['/api/voice-guide', '/api/voice-guide/:key'], requireAdminAuth, async (req, res) => {
   try {
     const key = (req.params.key || 'main').toLowerCase();
     const { settings, sha } = await getSettings(true);
@@ -849,7 +911,7 @@ app.get('/api/coupon/:code', async (req, res) => {
 // ============================================
 // API: Get all surveys (admin)
 // ============================================
-app.get('/api/surveys', async (req, res) => {
+app.get('/api/surveys', requireAdminAuth, async (req, res) => {
   try {
     const refresh = !!req.query.refresh;
     const { surveys } = await getSurveys(refresh);
@@ -863,7 +925,7 @@ app.get('/api/surveys', async (req, res) => {
 // ============================================
 // API: Delete a survey response (admin)
 // ============================================
-app.delete('/api/surveys/:id', async (req, res) => {
+app.delete('/api/surveys/:id', requireAdminAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { surveys, sha } = await getSurveys(true);
@@ -885,7 +947,7 @@ app.delete('/api/surveys/:id', async (req, res) => {
 // ============================================
 // API: Get survey stats
 // ============================================
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', requireAdminAuth, async (req, res) => {
   try {
     const { surveys } = await getSurveys();
     const total = surveys.length;
@@ -920,7 +982,25 @@ app.get('/api/stats', async (req, res) => {
 // Serve pages
 // ============================================
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
-app.get(['/', '/survey'], (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+app.get(['/', '/survey'], (req, res) => {
+  try {
+    const indexPath = path.join(__dirname, 'index.html');
+    const fs = require('fs');
+    if (fs.existsSync(indexPath)) {
+      let html = fs.readFileSync(indexPath, 'utf8');
+      const host = req.get('host') || 'vo-3hp3.onrender.com';
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const baseUrl = `${protocol}://${host}`;
+      html = html.replace(/https:\/\/[^"'\s]+\/logo_v2\.png/g, `${baseUrl}/logo_v2.png`);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(html);
+    }
+    res.sendFile(indexPath);
+  } catch (e) {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  }
+});
 
 // ============================================
 // Start server
