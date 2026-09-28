@@ -319,6 +319,8 @@ async function loadSettings() {
     if (s.logo_url) {
       const ogImage = document.getElementById('og-image');
       if (ogImage) ogImage.setAttribute('content', s.logo_url.startsWith('http') ? s.logo_url : window.location.origin + s.logo_url);
+      const brandLogo = document.querySelector('.brand-logo');
+      if (brandLogo) brandLogo.src = s.logo_url;
     }
     if (s.store_name) {
       const el = document.getElementById('header-store-name');
