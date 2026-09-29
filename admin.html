@@ -565,6 +565,8 @@
   </div>
 
   <div class="admin-container" id="admin-dashboard" style="display:none;">
+
+    <!-- ===== TOP HEADER ===== -->
     <div class="admin-header" style="justify-content:space-between; flex-wrap:wrap; gap:12px;">
       <div style="display:flex; align-items:center; gap:14px;">
         <img src="logo_v2.png" alt="Logo"
@@ -580,353 +582,431 @@
       </button>
     </div>
 
-    <!-- Link Generator -->
-    <div class="link-generator">
-      <h2>🔗 إنشاء رابط استبيان لعميل</h2>
-      <div class="link-form" id="link-form">
-        <div>
-          <label>اسم العميل *</label>
-          <input type="text" id="link-name" placeholder="أدخل اسم العميل">
-        </div>
-        <div>
-          <label>رقم الهاتف (اختياري)</label>
-          <input type="tel" id="link-phone" placeholder="05X XXX XXXX">
-        </div>
-        <div class="full-width">
-          <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-            <span>فاتورة الشراء (PDF)</span>
-            <span style="font-size:0.78rem; font-weight:700; color:#00a8ff;">✨ ارفع الفاتورة وسيتم استخدام اسم الملف ورقم الهاتف تلقائياً!</span>
-          </label>
-          <div class="file-upload" id="file-upload-area">
-            <span style="font-size: 1.3rem;">📎</span>
-            <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF — سيُستخدم اسم الملف كاسم للعميل</span>
-            <span class="file-name" id="file-name" style="display:none;"></span>
-            <input type="file" id="link-invoice" accept=".pdf">
-          </div>
-          <div id="pdf-extract-status" style="display:none; margin-top:8px; font-size:0.84rem; padding:8px 14px; border-radius:8px;"></div>
-        </div>
-        <div class="full-width" style="display: flex; gap: 12px; align-items: flex-end;">
-          <button class="generate-btn" id="generate-btn" onclick="generateLink()">✨ إنشاء الرابط</button>
-        </div>
-      </div>
-
-      <div class="link-result" id="link-result">
-        <div class="result-label">✅ تم إنشاء الرابط بنجاح!</div>
-        <div class="result-url">
-          <span id="generated-url"></span>
-          <button class="copy-btn" onclick="copyGeneratedLink()">📋 نسخ</button>
-        </div>
-        <div class="share-btns">
-          <a href="#" class="wa-btn" id="wa-share-btn" target="_blank">💬 مشاركة عبر واتساب</a>
-        </div>
-      </div>
+    <!-- ===== TAB NAV ===== -->
+    <div id="admin-tab-nav" style="display:flex; gap:6px; flex-wrap:wrap; margin:24px 0 0; padding:6px; background:rgba(0,10,30,0.7); border-radius:16px; border:1px solid rgba(0,168,255,0.18); backdrop-filter:blur(12px);">
+      <button class="admin-tab-btn active" onclick="showTab('tab-links')" id="btn-tab-links"
+        style="flex:1; min-width:120px; padding:11px 18px; border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:0.88rem; font-weight:700; cursor:pointer; transition:all 0.25s; background:linear-gradient(135deg,#00a8ff,#0066ff); color:#fff; box-shadow:0 4px 14px rgba(0,100,255,0.35);">
+        🔗 إنشاء الروابط
+      </button>
+      <button class="admin-tab-btn" onclick="showTab('tab-surveys')" id="btn-tab-surveys"
+        style="flex:1; min-width:120px; padding:11px 18px; border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:0.88rem; font-weight:700; cursor:pointer; transition:all 0.25s; background:rgba(255,255,255,0.06); color:#8db8d8;">
+        📊 الاستبيانات
+      </button>
+      <button class="admin-tab-btn" onclick="showTab('tab-coupons')" id="btn-tab-coupons"
+        style="flex:1; min-width:120px; padding:11px 18px; border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:0.88rem; font-weight:700; cursor:pointer; transition:all 0.25s; background:rgba(255,255,255,0.06); color:#8db8d8;">
+        🎟️ الكوبونات
+      </button>
+      <button class="admin-tab-btn" onclick="showTab('tab-settings')" id="btn-tab-settings"
+        style="flex:1; min-width:120px; padding:11px 18px; border:none; border-radius:12px; font-family:'Cairo',sans-serif; font-size:0.88rem; font-weight:700; cursor:pointer; transition:all 0.25s; background:rgba(255,255,255,0.06); color:#8db8d8;">
+        ⚙️ الإعدادات
+      </button>
     </div>
 
-    <!-- Coupon Verifier -->
-    <div class="link-generator" style="margin-top: 24px; border-top: 4px solid var(--accent-emerald);">
-      <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-        🔍 التحقق من صلاحية كوبون الخصم
-      </h2>
-      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
-        أدخل كود الكوبون الموضح مع العميل للتحقق من هويته وتحميل فاتورته الـ PDF.
-      </p>
-      <div style="display: flex; gap: 12px; max-width: 600px; flex-wrap: wrap;">
-        <input type="text" id="coupon-search-input" placeholder="مثال: ACC20-XXXXXX" style="flex: 1; min-width: 200px; padding: 12px 16px; background: rgba(255, 255, 255, 0.06); border: 1.5px solid rgba(0, 168, 255, 0.25); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.95rem; color: #e8f4ff; direction: ltr; text-transform: uppercase;">
-        <button class="generate-btn" id="search-coupon-btn" onclick="verifyCoupon()" style="background: var(--gradient-success); box-shadow: 0 4px 16px rgba(16,185,129,0.25);">🔍 بحث وتحقق</button>
+    <!-- ===================================================== -->
+    <!-- TAB 1: إنشاء الروابط + جدول روابط العملاء            -->
+    <!-- ===================================================== -->
+    <div id="tab-links" class="admin-tab-panel" style="display:block;">
+
+      <!-- Link Generator -->
+      <div class="link-generator" style="margin-top:24px;">
+        <h2>🔗 إنشاء رابط استبيان لعميل</h2>
+        <div class="link-form" id="link-form">
+          <div>
+            <label>اسم العميل *</label>
+            <input type="text" id="link-name" placeholder="أدخل اسم العميل">
+          </div>
+          <div>
+            <label>رقم الهاتف (اختياري)</label>
+            <input type="tel" id="link-phone" placeholder="05X XXX XXXX">
+          </div>
+          <div class="full-width">
+            <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+              <span>فاتورة الشراء (PDF)</span>
+              <span style="font-size:0.78rem; font-weight:700; color:#00a8ff;">✨ ارفع الفاتورة وسيتم استخدام اسم الملف ورقم الهاتف تلقائياً!</span>
+            </label>
+            <div class="file-upload" id="file-upload-area">
+              <span style="font-size: 1.3rem;">📎</span>
+              <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF — سيُستخدم اسم الملف كاسم للعميل</span>
+              <span class="file-name" id="file-name" style="display:none;"></span>
+              <input type="file" id="link-invoice" accept=".pdf">
+            </div>
+            <div id="pdf-extract-status" style="display:none; margin-top:8px; font-size:0.84rem; padding:8px 14px; border-radius:8px;"></div>
+          </div>
+          <div class="full-width" style="display: flex; gap: 12px; align-items: flex-end;">
+            <button class="generate-btn" id="generate-btn" onclick="generateLink()">✨ إنشاء الرابط</button>
+          </div>
+        </div>
+
+        <div class="link-result" id="link-result">
+          <div class="result-label">✅ تم إنشاء الرابط بنجاح!</div>
+          <div class="result-url">
+            <span id="generated-url"></span>
+            <button class="copy-btn" onclick="copyGeneratedLink()">📋 نسخ</button>
+          </div>
+          <div class="share-btns">
+            <a href="#" class="wa-btn" id="wa-share-btn" target="_blank">💬 مشاركة عبر واتساب</a>
+          </div>
+        </div>
       </div>
 
-      <div id="coupon-search-result" style="display: none; margin-top: 20px; padding: 20px; background: rgba(7, 13, 26, 0.95); border: 1px solid rgba(0, 168, 255, 0.25); border-radius: var(--radius-lg); box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+      <!-- Customer Links Table -->
+      <div class="section-heading" style="margin-top:32px;">🔗 روابط العملاء</div>
+      <div class="links-table-wrapper" style="margin-bottom: 32px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>العميل</th>
+              <th>الهاتف</th>
+              <th>الفاتورة</th>
+              <th>الحالة</th>
+              <th>التاريخ</th>
+              <th>الرابط</th>
+            </tr>
+          </thead>
+          <tbody id="links-body">
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <div class="empty-icon">🔗</div>
+                  <p>لم يتم إنشاء روابط بعد</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+
     </div>
 
-    <!-- Settings & Customization Card -->
-    <div class="link-generator" style="margin-top: 24px; border-top: 4px solid var(--accent-purple);">
-      <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-        ⚙️ تخصيص تفاصيل الاستبيان ومشاركة الواتساب
-      </h2>
-      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
-        عدّل اسم المتجر، الفرع، النصوص الترويجية، وعنوان ووصف الرابط الذي يظهر في معاينة الواتساب وشبكات التواصل.
-      </p>
+    <!-- ===================================================== -->
+    <!-- TAB 2: الاستبيانات — إحصائيات + جدول الردود          -->
+    <!-- ===================================================== -->
+    <div id="tab-surveys" class="admin-tab-panel" style="display:none;">
 
-      <div class="link-form" id="settings-form">
-        <!-- Logo Section -->
-        <div class="full-width" style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(0,168,255,0.06); border:1px solid rgba(0,168,255,0.22); border-radius:12px; padding:16px; flex-wrap:wrap; margin-bottom:8px;">
-          <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:65px; height:65px; border-radius:12px; overflow:hidden; background:#0b1424; border:1.5px solid rgba(0,168,255,0.4); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
-              <img id="admin-logo-preview" src="/logo.png" alt="شعار المتجر" style="max-width:100%; max-height:100%; object-fit:contain;">
-            </div>
-            <div>
-              <div style="font-weight:700; color:#e8f4ff; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
-                <span>🖼️</span> <span>شعار المتجر (اللوجو)</span>
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="stats-grid" style="margin-top:24px;">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">إجمالي الردود</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-rating">0</div>
+          <div class="stat-label">متوسط التقييم ⭐</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-purchased">0%</div>
+          <div class="stat-label">نسبة الشراء</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-top-source">-</div>
+          <div class="stat-label">أكثر مصدر</div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="toolbar" style="margin-top:20px;">
+        <span class="count" id="table-count">جاري التحميل...</span>
+        <div>
+          <button class="refresh-btn" onclick="loadData()">🔄 تحديث</button>
+          <button class="export-btn" onclick="exportCSV()">📥 تصدير CSV</button>
+        </div>
+      </div>
+
+      <!-- Surveys Table -->
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>الهاتف</th>
+              <th>تاريخ الشراء</th>
+              <th>الفرع</th>
+              <th>المصدر</th>
+              <th>تم الشراء</th>
+              <th>الإمارة</th>
+              <th>التقييم</th>
+              <th>الكوبون</th>
+              <th>التجربة / الصوت</th>
+              <th>التاريخ</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr>
+              <td colspan="10">
+                <div class="empty-state">
+                  <div class="empty-icon">📭</div>
+                  <p>جاري تحميل البيانات...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- TAB 3: الكوبونات                                       -->
+    <!-- ===================================================== -->
+    <div id="tab-coupons" class="admin-tab-panel" style="display:none;">
+
+      <div class="link-generator" style="margin-top:24px; border-top: 4px solid var(--accent-emerald);">
+        <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          🔍 التحقق من صلاحية كوبون الخصم
+        </h2>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+          أدخل كود الكوبون الموضح مع العميل للتحقق من هويته وتحميل فاتورته الـ PDF.
+        </p>
+        <div style="display: flex; gap: 12px; max-width: 600px; flex-wrap: wrap;">
+          <input type="text" id="coupon-search-input" placeholder="مثال: ACC20-XXXXXX" style="flex: 1; min-width: 200px; padding: 12px 16px; background: rgba(255, 255, 255, 0.06); border: 1.5px solid rgba(0, 168, 255, 0.25); border-radius: var(--radius-md); font-family: 'Cairo', sans-serif; font-size: 0.95rem; color: #e8f4ff; direction: ltr; text-transform: uppercase;">
+          <button class="generate-btn" id="search-coupon-btn" onclick="verifyCoupon()" style="background: var(--gradient-success); box-shadow: 0 4px 16px rgba(16,185,129,0.25);">🔍 بحث وتحقق</button>
+        </div>
+
+        <div id="coupon-search-result" style="display: none; margin-top: 20px; padding: 20px; background: rgba(7, 13, 26, 0.95); border: 1px solid rgba(0, 168, 255, 0.25); border-radius: var(--radius-lg); box-shadow: 0 8px 32px rgba(0,0,0,0.5);">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================================================== -->
+    <!-- TAB 4: الإعدادات                                       -->
+    <!-- ===================================================== -->
+    <div id="tab-settings" class="admin-tab-panel" style="display:none;">
+
+      <div class="link-generator" style="margin-top:24px; border-top: 4px solid var(--accent-purple);">
+        <h2 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          ⚙️ تخصيص تفاصيل الاستبيان ومشاركة الواتساب
+        </h2>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+          عدّل اسم المتجر، الفرع، النصوص الترويجية، وعنوان ووصف الرابط الذي يظهر في معاينة الواتساب وشبكات التواصل.
+        </p>
+
+        <div class="link-form" id="settings-form">
+
+          <!-- Logo Section -->
+          <div class="full-width" style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(0,168,255,0.06); border:1px solid rgba(0,168,255,0.22); border-radius:12px; padding:16px; flex-wrap:wrap; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:65px; height:65px; border-radius:12px; overflow:hidden; background:#0b1424; border:1.5px solid rgba(0,168,255,0.4); display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+                <img id="admin-logo-preview" src="/logo_v2.png" alt="شعار المتجر" style="max-width:100%; max-height:100%; object-fit:contain;">
               </div>
-              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px;">
-                يظهر في معاينة الرابط عند إرساله عبر واتساب، فيسبوك، وجميع وسائل التواصل الاجتماعي.
+              <div>
+                <div style="font-weight:700; color:#e8f4ff; font-size:0.95rem; display:flex; align-items:center; gap:6px;">
+                  <span>🖼️</span> <span>شعار المتجر (اللوجو)</span>
+                </div>
+                <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px;">
+                  يظهر في معاينة الرابط عند إرساله عبر واتساب، فيسبوك، وجميع وسائل التواصل الاجتماعي.
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="uploadLogo(this)">
+              <button type="button" class="generate-btn" onclick="document.getElementById('logo-file-input').click()" style="padding:9px 18px; font-size:0.84rem; background:linear-gradient(135deg,#00a8ff,#0066ff); cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+                <span>📷</span> <span>تغيير اللوجو</span>
+              </button>
+              <span id="logo-upload-status" style="font-size:0.8rem; font-weight:700; display:none;"></span>
+            </div>
+          </div>
+
+          <!-- Store Info -->
+          <div>
+            <label>اسم المتجر (الرئيسي)</label>
+            <input type="text" id="setting-store-name" placeholder="مثال: أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
+          </div>
+          <div>
+            <label>اسم الفرع الافتراضي</label>
+            <input type="text" id="setting-branch-name" placeholder="مثال: فرع الشارقة 🇦🇪" oninput="updateWhatsAppPreview()">
+          </div>
+
+          <div class="full-width">
+            <label>عنوان الرابط في واتساب ووسائل التواصل (Title)</label>
+            <input type="text" id="setting-meta-title" placeholder="مثال: استبيان رضا العملاء - أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
+          </div>
+
+          <div class="full-width">
+            <label>وصف الرابط في واتساب (الرسالة الترويجية التي تظهر في معاينة الرابط عند إرساله للعميل)</label>
+            <textarea id="setting-meta-desc" rows="2" placeholder="اكتب النص الترويجي الذي يظهر في واتساب..." oninput="updateWhatsAppPreview()"></textarea>
+          </div>
+
+          <!-- WhatsApp Share Message Customization -->
+          <div class="full-width" style="background: rgba(37,211,102,0.07); border: 1px solid rgba(37,211,102,0.25); border-radius: 12px; padding: 16px; margin-top: 4px;">
+            <label style="color: #25d366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
+              💬 تخصيص نص رسالة واتساب عند إرسال رابط الفاتورة للعميل
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الأول (عنوان الرسالة)</label>
+                <input type="text" id="setting-wa-line1" placeholder="مثال: شكرا لثقتكم فينا ❤️❤️" oninput="updateWaPreview()">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الثالث (تحت الرابط)</label>
+                <input type="text" id="setting-wa-line2" placeholder="مثال: شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات" oninput="updateWaPreview()">
+              </div>
+              <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الرابع (الختام)</label>
+                <input type="text" id="setting-wa-line3" placeholder="مثال: حمل فاتورتك من الرابط ✅" oninput="updateWaPreview()">
+              </div>
+            </div>
+            <!-- WA Preview -->
+            <div style="margin-top: 12px; background: #111b21; border-radius: 8px; padding: 12px 14px; border-right: 4px solid #25d366; font-size: 0.83rem; color: #e9edef; line-height: 1.7; white-space: pre-line; direction: rtl;" id="wa-msg-preview">...</div>
+          </div>
+
+          <!-- Welcome & Coupon -->
+          <div class="full-width">
+            <label>نص الترحيب في أعلى صفحة الاستبيان</label>
+            <input type="text" id="setting-welcome-desc" placeholder="مثال: شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!">
+          </div>
+
+          <div>
+            <label>نسبة أو قيمة الخصم (في الكوبون)</label>
+            <input type="text" id="setting-discount-text" placeholder="مثال: خصم 20%">
+          </div>
+          <div>
+            <label>تفاصيل وشروط الكوبون</label>
+            <input type="text" id="setting-coupon-desc" placeholder="مثال: على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة">
+          </div>
+
+          <div class="full-width">
+            <label>رابط تقييم خرائط جوجل العام للمتجر (افتراضي)</label>
+            <input type="url" id="setting-maps-url" placeholder="https://maps.app.goo.gl/..." style="direction: ltr; text-align: left;">
+          </div>
+
+          <!-- Link Preview -->
+          <div class="full-width" style="margin-top: 4px; background: rgba(11, 20, 36, 0.85); padding: 18px; border-radius: 12px; border: 1px solid rgba(0, 168, 255, 0.2);">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #25d366; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+              <span>💬</span> <span>معاينة مباشرة لشكل الرابط عند إرساله في واتساب:</span>
+            </div>
+            <div style="background: #111b21; border-radius: 8px; border-left: 5px solid #25d366; padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); max-width: 500px;">
+              <div id="preview-meta-title" style="font-weight: 700; font-size: 0.95rem; color: #e9edef; margin-bottom: 5px;">
+                استبيان رضا العملاء - أمير العفيفي للهواتف
+              </div>
+              <div id="preview-meta-desc" style="font-size: 0.82rem; color: #8696a0; line-height: 1.4; margin-bottom: 8px;">
+                استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات
+              </div>
+              <div style="font-size: 0.75rem; color: #00a8ff; display: flex; align-items: center; gap: 4px;">
+                🔗 <span>amiralafify-invoice.netlify.app</span>
               </div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="uploadLogo(this)">
-            <button type="button" class="generate-btn" onclick="document.getElementById('logo-file-input').click()" style="padding:9px 18px; font-size:0.84rem; background:linear-gradient(135deg,#00a8ff,#0066ff); cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
-              <span>📷</span> <span>تغيير اللوجو</span>
+
+          <!-- Branch Management -->
+          <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(0, 168, 255, 0.04); border: 1px solid rgba(0, 168, 255, 0.18); border-radius: var(--radius-lg);">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
+              🏪 فروع المتجر وروابط الخرائط
+            </label>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 12px;">
+              أضف فروعك مع رابط خرائط جوجل لكل فرع، حتى يُوجَّه العميل مباشرة لتقييم الفرع الذي اختاره!
+            </p>
+
+            <div id="branches-list" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; min-height:36px;"></div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; margin-top:14px; align-items:center;">
+              <div>
+                <input type="text" id="new-branch-name"
+                  placeholder="اسم الفرع (مثال: فرع دبي 🇦🇪)"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
+              </div>
+              <div>
+                <input type="url" id="new-branch-maps"
+                  placeholder="رابط لوكيشن جوجل ماب (https://maps.app.goo.gl/...)"
+                  style="direction:ltr; text-align:left;"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
+              </div>
+              <button type="button" class="generate-btn" onclick="addBranch()" style="padding:10px 22px; font-size:0.88rem; background:linear-gradient(135deg,#00a8ff,#0066ff); white-space:nowrap;">
+                + إضافة فرع
+              </button>
+            </div>
+          </div>
+
+          <!-- Voice Guides -->
+          <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(0, 168, 255, 0.05); border: 1px solid rgba(0, 168, 255, 0.2); border-radius: var(--radius-lg);">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 0.98rem; color: #e8f4ff; margin-bottom: 4px;">
+              🎙️ التسجيلات الصوتية المخصصة لأزرار الاستماع
+              <span style="font-size:0.75rem; color:#00a8ff; font-weight:700;">✨ صوت مخصص لكل زر استماع في الصفحة</span>
+            </label>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom: 16px;">
+              يمكنك تسجيل صوتك أو رفع ملف صوتي (MP3/WAV/WebM) لكل قسم وزر استماع على حدة، ليسمع العميل صوتك التوضيحي بدلاً من القراءة الآلية!
+            </p>
+            <div id="voice-sections-container" style="display:flex; flex-direction:column; gap:12px;"></div>
+          </div>
+
+          <!-- Admin Security -->
+          <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(139, 92, 246, 0.07); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-lg);">
+            <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
+              🔐 بيانات تسجيل الدخول لحساب الإدارة
+            </label>
+            <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 12px;">
+              يمكنك تغيير اسم المستخدم وكلمة المرور الخاصة بلوحة التحكم من هنا لحماية بياناتك من أي وصول غير مصرح به.
+            </p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+              <div>
+                <label style="font-size:0.82rem; color:#cbd5e1; margin-bottom:4px; display:block;">اسم المستخدم الحالي أو الجديد</label>
+                <input type="text" id="setting-admin-username" placeholder="admin">
+              </div>
+              <div>
+                <label style="font-size:0.82rem; color:#cbd5e1; margin-bottom:4px; display:block;">كلمة المرور الجديدة</label>
+                <input type="password" id="setting-admin-password" placeholder="اتركه فارغاً إذا لا تريد تغييره">
+              </div>
+            </div>
+          </div>
+
+          <!-- Preferred Domain -->
+          <div class="full-width" style="margin-top: 14px; padding: 16px; background: rgba(0, 168, 255, 0.05); border: 1px solid rgba(0, 168, 255, 0.2); border-radius: var(--radius-lg);">
+            <label style="font-size: 0.88rem; color: #e8f4ff; margin-bottom: 6px; display: block; font-weight: 700;">
+              🌐 نطاق الروابط عند النسخ ومشاركة واتساب (الدومين)
+            </label>
+            <select id="setting-preferred-domain" style="width: 100%; padding: 10px 14px; background: rgba(0,15,40,0.85); border: 1px solid rgba(0,168,255,0.35); border-radius: 10px; color: #e8f4ff; font-family: 'Cairo', sans-serif;">
+              <option value="https://amiralafify-invoic.netlify.app">https://amiralafify-invoic.netlify.app (رابط Netlify الرسمي)</option>
+              <option value="https://vo-3hp3.onrender.com">https://vo-3hp3.onrender.com (رابط Render المباشر)</option>
+              <option value="auto">تلقائياً حسب الرابط المفتوح في المتصفح حالياً</option>
+            </select>
+          </div>
+
+          <!-- Save Button -->
+          <div class="full-width" style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
+            <button class="generate-btn" id="save-settings-btn" onclick="saveSettings()" style="background: var(--gradient-primary);">
+              💾 حفظ التعديلات
             </button>
-            <span id="logo-upload-status" style="font-size:0.8rem; font-weight:700; display:none;"></span>
+            <span id="settings-save-status" style="font-size: 0.85rem; font-weight: 700; display: none;"></span>
           </div>
-        </div>
 
-        <div>
-          <label>اسم المتجر (الرئيسي)</label>
-          <input type="text" id="setting-store-name" placeholder="مثال: أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
-        </div>
-        <div>
-          <label>اسم الفرع الافتراضي</label>
-          <input type="text" id="setting-branch-name" placeholder="مثال: فرع الشارقة 🇦🇪" oninput="updateWhatsAppPreview()">
-        </div>
-
-        <div class="full-width">
-          <label>عنوان الرابط في واتساب ووسائل التواصل (Title)</label>
-          <input type="text" id="setting-meta-title" placeholder="مثال: استبيان رضا العملاء - أمير العفيفي للهواتف" oninput="updateWhatsAppPreview()">
-        </div>
-
-        <div class="full-width">
-          <label>وصف الرابط في واتساب (الرسالة الترويجية التي تظهر في معاينة الرابط عند إرساله للعميل)</label>
-          <textarea id="setting-meta-desc" rows="2" placeholder="اكتب النص الترويجي الذي يظهر في واتساب..." oninput="updateWhatsAppPreview()"></textarea>
-        </div>
-
-        <!-- WhatsApp Share Message Customization -->
-        <div class="full-width" style="background: rgba(37,211,102,0.07); border: 1px solid rgba(37,211,102,0.25); border-radius: 12px; padding: 16px; margin-top: 4px;">
-          <label style="color: #25d366; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; margin-bottom: 10px;">
-            💬 تخصيص نص رسالة واتساب عند إرسال رابط الفاتورة للعميل
-          </label>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div>
-              <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الأول (عنوان الرسالة)</label>
-              <input type="text" id="setting-wa-line1" placeholder="مثال: شكرا لثقتكم فينا ❤️❤️" oninput="updateWaPreview()">
-            </div>
-            <div>
-              <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الثالث (تحت الرابط)</label>
-              <input type="text" id="setting-wa-line2" placeholder="مثال: شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات" oninput="updateWaPreview()">
-            </div>
-            <div>
-              <label style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; display: block;">📌 السطر الرابع (الختام)</label>
-              <input type="text" id="setting-wa-line3" placeholder="مثال: حمل فاتورتك من الرابط ✅" oninput="updateWaPreview()">
-            </div>
-          </div>
-          <!-- Preview -->
-          <div style="margin-top: 12px; background: #111b21; border-radius: 8px; padding: 12px 14px; border-right: 4px solid #25d366; font-size: 0.83rem; color: #e9edef; line-height: 1.7; white-space: pre-line; direction: rtl;" id="wa-msg-preview">...</div>
-        </div>
-
-        <div class="full-width">
-          <label>نص الترحيب في أعلى صفحة الاستبيان</label>
-          <input type="text" id="setting-welcome-desc" placeholder="مثال: شاركنا رأيك في تجربة شرائك واحصل على كوبون خصم 20% فوراً!">
-        </div>
-
-        <div>
-          <label>نسبة أو قيمة الخصم (في الكوبون)</label>
-          <input type="text" id="setting-discount-text" placeholder="مثال: خصم 20%">
-        </div>
-        <div>
-          <label>تفاصيل وشروط الكوبون</label>
-          <input type="text" id="setting-coupon-desc" placeholder="مثال: على جميع الاكسسوارات لدى أمير العفيفي للهواتف في زيارتك القادمة">
-        </div>
-
-        <div class="full-width">
-          <label>رابط تقييم خرائط جوجل العام للمتجر (افتراضي)</label>
-          <input type="url" id="setting-maps-url" placeholder="https://maps.app.goo.gl/..." style="direction: ltr; text-align: left;">
-        </div>
-
-        <!-- Branch Management -->
-        <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(0, 168, 255, 0.04); border: 1px solid rgba(0, 168, 255, 0.18); border-radius: var(--radius-lg);">
-          <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
-            🏪 فروع المتجر وروابط الخرائط
-          </label>
-          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 12px;">
-            أضف فروعك مع رابط خرائط جوجل لكل فرع، حتى يُوجَّه العميل مباشرة لتقييم الفرع الذي اختاره!
-          </p>
-
-          <div id="branches-list" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; min-height:36px;"></div>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; margin-top:14px; align-items:center;">
-            <div>
-              <input type="text" id="new-branch-name"
-                placeholder="اسم الفرع (مثال: فرع دبي 🇦🇪)"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
-            </div>
-            <div>
-              <input type="url" id="new-branch-maps"
-                placeholder="رابط لوكيشن جوجل ماب (https://maps.app.goo.gl/...)"
-                style="direction:ltr; text-align:left;"
-                onkeydown="if(event.key==='Enter'){event.preventDefault();addBranch();}">
-            </div>
-            <button type="button" class="generate-btn" onclick="addBranch()" style="padding:10px 22px; font-size:0.88rem; background:linear-gradient(135deg,#00a8ff,#0066ff); white-space:nowrap;">
-              + إضافة فرع
-            </button>
-          </div>
-        </div>
-
-        <!-- Multi-button Voice Guide Settings -->
-        <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(0, 168, 255, 0.05); border: 1px solid rgba(0, 168, 255, 0.2); border-radius: var(--radius-lg);">
-          <label style="display:flex; align-items:center; gap:8px; font-size: 0.98rem; color: #e8f4ff; margin-bottom: 4px;">
-            🎙️ التسجيلات الصوتية المخصصة لأزرار الاستماع
-            <span style="font-size:0.75rem; color:#00a8ff; font-weight:700;">✨ صوت مخصص لكل زر استماع في الصفحة</span>
-          </label>
-          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom: 16px;">
-            يمكنك تسجيل صوتك أو رفع ملف صوتي (MP3/WAV/WebM) لكل قسم وزر استماع على حدة، ليسمع العميل صوتك التوضيحي بدلاً من القراءة الآلية!
-          </p>
-
-          <div id="voice-sections-container" style="display:flex; flex-direction:column; gap:12px;"></div>
-        </div>
-
-        <!-- Live WhatsApp Preview Box -->
-        <div class="full-width" style="margin-top: 14px; background: rgba(11, 20, 36, 0.85); padding: 18px; border-radius: 12px; border: 1px solid rgba(0, 168, 255, 0.2);">
-          <div style="font-size: 0.85rem; font-weight: 700; color: #25d366; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-            <span>💬</span> <span>معاينة مباشرة لشكل الرابط عند إرساله في واتساب:</span>
-          </div>
-          <div style="background: #111b21; border-radius: 8px; border-left: 5px solid #25d366; padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); max-width: 500px;">
-            <div id="preview-meta-title" style="font-weight: 700; font-size: 0.95rem; color: #e9edef; margin-bottom: 5px;">
-              استبيان رضا العملاء - أمير العفيفي للهواتف
-            </div>
-            <div id="preview-meta-desc" style="font-size: 0.82rem; color: #8696a0; line-height: 1.4; margin-bottom: 8px;">
-              استبيان رضا العملاء - أمير العفيفي للهواتف (فرع الشارقة) - شاركنا رأيك واحصل على كوبون خصم 20% على الإكسسوارات
-            </div>
-            <div style="font-size: 0.75rem; color: #00a8ff; display: flex; align-items: center; gap: 4px;">
-              🔗 <span>amiralafify-invoice.netlify.app</span>
-            </div>
-          </div>
-        <!-- Admin Security / Login Credentials -->
-        <div class="full-width" style="margin-top: 14px; padding: 18px; background: rgba(139, 92, 246, 0.07); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-lg);">
-          <label style="display:flex; align-items:center; gap:8px; font-size: 0.95rem; color: #e8f4ff; margin-bottom: 4px;">
-            🔐 بيانات تسجيل الدخول لحساب الإدارة
-          </label>
-          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 12px;">
-            يمكنك تغيير اسم المستخدم وكلمة المرور الخاصة بلوحة التحكم من هنا لحماية بياناتك من أي وصول غير مصرح به.
-          </p>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-            <div>
-              <label style="font-size:0.82rem; color:#cbd5e1; margin-bottom:4px; display:block;">اسم المستخدم الحالي أو الجديد</label>
-              <input type="text" id="setting-admin-username" placeholder="admin">
-            </div>
-            <div>
-              <label style="font-size:0.82rem; color:#cbd5e1; margin-bottom:4px; display:block;">كلمة المرور الجديدة</label>
-              <input type="password" id="setting-admin-password" placeholder="اتركه فارغاً إذا لا تريد تغييره">
-            </div>
-          </div>
-        </div>
-
-        <!-- Preferred Domain Selection -->
-        <div class="full-width" style="margin-top: 14px; padding: 16px; background: rgba(0, 168, 255, 0.05); border: 1px solid rgba(0, 168, 255, 0.2); border-radius: var(--radius-lg);">
-          <label style="font-size: 0.88rem; color: #e8f4ff; margin-bottom: 6px; display: block; font-weight: 700;">
-            🌐 نطاق الروابط عند النسخ ومشاركة واتساب (الدومين)
-          </label>
-          <select id="setting-preferred-domain" style="width: 100%; padding: 10px 14px; background: rgba(0,15,40,0.85); border: 1px solid rgba(0,168,255,0.35); border-radius: 10px; color: #e8f4ff; font-family: 'Cairo', sans-serif;">
-            <option value="https://amiralafify-invoic.netlify.app">https://amiralafify-invoic.netlify.app (رابط Netlify الرسمي)</option>
-            <option value="https://vo-3hp3.onrender.com">https://vo-3hp3.onrender.com (رابط Render المباشر)</option>
-            <option value="auto">تلقائياً حسب الرابط المفتوح في المتصفح حالياً</option>
-          </select>
-        </div>
-
-        <div class="full-width" style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
-          <button class="generate-btn" id="save-settings-btn" onclick="saveSettings()" style="background: var(--gradient-primary);">
-            💾 حفظ التعديلات
-          </button>
-          <span id="settings-save-status" style="font-size: 0.85rem; font-weight: 700; display: none;"></span>
         </div>
       </div>
-    </div>
 
-    <!-- Customer Links Table -->
-    <div class="section-heading">🔗 روابط العملاء</div>
-    <div class="links-table-wrapper" style="margin-bottom: 32px;">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>العميل</th>
-            <th>الهاتف</th>
-            <th>الفاتورة</th>
-            <th>الحالة</th>
-            <th>التاريخ</th>
-            <th>الرابط</th>
-          </tr>
-        </thead>
-        <tbody id="links-body">
-          <tr>
-            <td colspan="7">
-              <div class="empty-state">
-                <div class="empty-icon">🔗</div>
-                <p>لم يتم إنشاء روابط بعد</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    </div><!-- end tab-settings -->
 
-    <!-- Stats -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="stat-total">0</div>
-        <div class="stat-label">إجمالي الردود</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-rating">0</div>
-        <div class="stat-label">متوسط التقييم ⭐</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-purchased">0%</div>
-        <div class="stat-label">نسبة الشراء</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-top-source">-</div>
-        <div class="stat-label">أكثر مصدر</div>
-      </div>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <span class="count" id="table-count">جاري التحميل...</span>
-      <div>
-        <button class="refresh-btn" onclick="loadData()">🔄 تحديث</button>
-        <button class="export-btn" onclick="exportCSV()">📥 تصدير CSV</button>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="table-wrapper">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>الاسم</th>
-            <th>الهاتف</th>
-            <th>تاريخ الشراء</th>
-            <th>الفرع</th>
-            <th>المصدر</th>
-            <th>تم الشراء</th>
-            <th>الإمارة</th>
-            <th>التقييم</th>
-            <th>الكوبون</th>
-            <th>التجربة / الصوت</th>
-            <th>التاريخ</th>
-            <th>الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-          <tr>
-            <td colspan="10">
-              <div class="empty-state">
-                <div class="empty-icon">📭</div>
-                <p>جاري تحميل البيانات...</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  </div><!-- end admin-dashboard -->
 
   <script>
     let surveyData = [];
     let lastGeneratedUrl = '';
+
+    // ========================================
+    // Tab Navigation
+    // ========================================
+    function showTab(tabId) {
+      document.querySelectorAll('.admin-tab-panel').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.admin-tab-btn').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.06)';
+        b.style.color = '#8db8d8';
+        b.style.boxShadow = 'none';
+      });
+      const panel = document.getElementById(tabId);
+      if (panel) panel.style.display = 'block';
+      const btnId = 'btn-' + tabId;
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.style.background = 'linear-gradient(135deg,#00a8ff,#0066ff)';
+        btn.style.color = '#fff';
+        btn.style.boxShadow = '0 4px 14px rgba(0,100,255,0.35)';
+      }
+      // refresh data when switching to surveys tab
+      if (tabId === 'tab-surveys') { loadData(); }
+      if (tabId === 'tab-links') { loadLinks(); }
+    }
+
 
     // ========================================
     // Authentication & Session Management
