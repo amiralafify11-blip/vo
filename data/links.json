@@ -40,7 +40,7 @@
     "has_invoice": true,
     "invoice_filename": "invoice_06c5045ca6dc210a.pdf",
     "invoice_original_name": "محمد سيد.pdf",
-    "is_completed": false,
+    "is_completed": true,
     "created_at": "2026-09-29T15:47:06.015Z"
   },
   {
