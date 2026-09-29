@@ -595,11 +595,11 @@
         <div class="full-width">
           <label style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
             <span>فاتورة الشراء (PDF)</span>
-            <span style="font-size:0.78rem; font-weight:700; color:#00a8ff;">✨ ارفع الفاتورة وسيتم استخراج الاسم ورقم الهاتف تلقائياً!</span>
+            <span style="font-size:0.78rem; font-weight:700; color:#00a8ff;">✨ ارفع الفاتورة وسيتم استخدام اسم الملف ورقم الهاتف تلقائياً!</span>
           </label>
           <div class="file-upload" id="file-upload-area">
             <span style="font-size: 1.3rem;">📎</span>
-            <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF (سيتم قراءة البيانات تلقائياً)</span>
+            <span class="file-label" id="file-label">اضغط لرفع الفاتورة بصيغة PDF — سيُستخدم اسم الملف كاسم للعميل</span>
             <span class="file-name" id="file-name" style="display:none;"></span>
             <input type="file" id="link-invoice" accept=".pdf">
           </div>
@@ -1162,36 +1162,33 @@
 
     async function extractInfoFromPdf(file) {
       const statusEl = document.getElementById('pdf-extract-status');
-      statusEl.style.display = 'block';
-      statusEl.style.background = 'rgba(0, 168, 255, 0.1)';
-      statusEl.style.border = '1px solid rgba(0, 168, 255, 0.25)';
-      statusEl.style.color = '#40c4ff';
-      statusEl.innerHTML = '⏳ جاري فحص الفاتورة واستخراج اسم العميل ورقم الهاتف...';
+      const nameInput = document.getElementById('link-name');
+      const phoneInput = document.getElementById('link-phone');
 
+      // ── Use PDF filename as the customer name ──
+      const rawName = file.name.replace(/\.pdf$/i, '').replace(/[_\-]+/g, ' ').trim();
+      if (rawName && rawName.length >= 2) {
+        nameInput.value = rawName;
+      }
+
+      // ── Still try to extract phone number from PDF content ──
       try {
-        if (!window.pdfjsLib) {
-          throw new Error('مكتبة PDF غير محملة');
-        }
+        if (!window.pdfjsLib) throw new Error('pdf.js not loaded');
 
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
         let rawLines = [];
         const pagesToScan = Math.min(pdf.numPages, 3);
 
         for (let i = 1; i <= pagesToScan; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
-          
-          // Group text items by line (using vertical coordinate transform[5])
           let lineMap = {};
           content.items.forEach(item => {
             const y = Math.round(item.transform[5]);
             if (!lineMap[y]) lineMap[y] = [];
             lineMap[y].push(item.str);
           });
-
-          // Sort lines from top to bottom
           const sortedYs = Object.keys(lineMap).map(Number).sort((a, b) => b - a);
           sortedYs.forEach(y => {
             const lineStr = lineMap[y].join(' ');
@@ -1199,21 +1196,15 @@
           });
         }
 
-        // Normalize all lines for Arabic presentation forms
         const normalizedLines = rawLines.map(l => normalizeArabicText(l));
         const fullNormalizedText = normalizedLines.join('\n');
-        const reversedFullText = normalizedLines.map(l => l.split('').reverse().join('')).join('\n');
 
-        // ----------------------------------------------------
-        // 1. Extract Phone Number
-        // ----------------------------------------------------
         let extractedPhone = '';
         const phoneRegexes = [
           /(?:(?:\+|00)?971[\s-]?)?0?5[0-9]{1}[\s-]?[0-9]{3}[\s-]?[0-9]{4}\b/,
           /(?:الهاتف|هاتف|موبايل|الموبايل|جوال|الجوال|phone|mobile|tel)[\s:=-]*((?:\+?[0-9]{1,4}[\s-]?)?[0-9]{8,14})/i,
           /(?:05\d{8})/
         ];
-
         for (const pr of phoneRegexes) {
           const m = fullNormalizedText.match(pr);
           if (m) {
@@ -1222,132 +1213,23 @@
           }
         }
 
-        // ----------------------------------------------------
-        // 2. Extract Customer Name (Support Normal & Reversed Arabic)
-        // ----------------------------------------------------
-        let extractedName = '';
-
-        // Patterns to match customer name in forward and reverse orders
-        const nameKeywordsForward = [
-          /(?:اسم\s*العميل|العميل|السيد\s*\/?\s*السيدة|اسم\s*المشتري|المشتري|الزبون|المطلوب\s*من|Customer\s*Name|Customer|Bill\s*To|Client\s*Name|Client)[\s:=-]+([^\n\r,\/:|0-9]{2,40})/i,
-          /(?:السيد|السيدة|الأستاذ|حضرة)[\s:=-]+([^\n\r,\/:|0-9]{2,40})/i
-        ];
-
-        const nameKeywordsReverse = [
-          /(?:ليمعلا\s*مسا|ليمعلا|ديسلا|يرتشملا|نوبزلا)[\s:=-]+([^\n\r,\/:|0-9]{2,40})/i
-        ];
-
-        // Try standard forward search
-        for (const regex of nameKeywordsForward) {
-          const match = fullNormalizedText.match(regex);
-          if (match && match[1]) {
-            let cand = match[1].trim();
-            cand = cand.replace(/\b(رقم|فاتورة|بتاريخ|تاريخ|هاتف|موبايل|Date|Invoice|Phone|Cash|نقدا|الشارقة|دبي|عجمان)\b.*/i, '').trim();
-            cand = fixIfReversedArabic(cand);
-            if (cand.length >= 3 && !cand.includes('أمير العفيفي')) {
-              extractedName = cand;
-              break;
-            }
-          }
-        }
-
-        // If not found, try reversed Arabic search
-        if (!extractedName) {
-          for (const regex of nameKeywordsReverse) {
-            const match = fullNormalizedText.match(regex);
-            if (match && match[1]) {
-              let cand = match[1].trim();
-              cand = cand.split('').reverse().join('').trim();
-              cand = cand.replace(/\b(رقم|فاتورة|بتاريخ|تاريخ|هاتف|موبايل|Date|Invoice|Phone)\b.*/i, '').trim();
-              if (cand.length >= 3 && !cand.includes('أمير العفيفي')) {
-                extractedName = cand;
-                break;
-              }
-            }
-          }
-        }
-
-        // If still not found, check line-by-line next lines
-        if (!extractedName) {
-          for (let idx = 0; idx < normalizedLines.length; idx++) {
-            const line = normalizedLines[idx];
-            if (/(?:اسم\s*العميل|العميل|Customer|Client|Bill\s*To)/i.test(line)) {
-              // check current line after keyword
-              const parts = line.split(/[:=-]/);
-              if (parts.length > 1 && parts[1].trim().length >= 3) {
-                let cand = fixIfReversedArabic(parts[1].trim());
-                if (!cand.includes('أمير العفيفي') && !/^\d+$/.test(cand)) {
-                  extractedName = cand;
-                  break;
-                }
-              }
-              // check next line
-              if (!extractedName && idx + 1 < normalizedLines.length) {
-                const nextLine = normalizedLines[idx + 1].trim();
-                if (nextLine.length >= 3 && nextLine.length <= 40 && !/^\d+$/.test(nextLine) && !nextLine.includes('أمير العفيفي')) {
-                  extractedName = fixIfReversedArabic(nextLine);
-                  break;
-                }
-              }
-            }
-          }
-        }
-
-        // Clean final extracted name
-        if (extractedName) {
-          extractedName = extractedName.replace(/[؛،,:.\-_/\\]/g, ' ').replace(/\s+/g, ' ').trim();
-        }
-
-        const nameInput = document.getElementById('link-name');
-        const phoneInput = document.getElementById('link-phone');
-
-        let msgParts = [];
-        if (extractedName) {
-          nameInput.value = extractedName;
-          msgParts.push(`👤 الاسم: <strong>${escapeHtml(extractedName)}</strong>`);
-        }
         if (extractedPhone) {
           phoneInput.value = extractedPhone;
-          msgParts.push(`📞 الهاتف: <strong>${escapeHtml(extractedPhone)}</strong>`);
-        }
-
-        if (extractedName || extractedPhone) {
-          statusEl.style.background = 'rgba(0, 212, 160, 0.15)';
-          statusEl.style.border = '1px solid rgba(0, 212, 160, 0.35)';
+          // Show a compact, subtle success message
+          statusEl.style.display = 'block';
+          statusEl.style.background = 'rgba(0, 212, 160, 0.12)';
+          statusEl.style.border = '1px solid rgba(0, 212, 160, 0.3)';
           statusEl.style.color = '#00d4a0';
-          statusEl.innerHTML = `✅ <strong>تم الاستخراج بنجاح!</strong> ${msgParts.join(' &nbsp;|&nbsp; ')} <br><span style="font-size:0.75rem; color:#8db8d8;">(يمكنك مراجعة وتعديل الحقول أعلاه إذا رغبت قبل إنشاء الرابط)</span>`;
+          statusEl.innerHTML = `✅ <strong>تم الاستخراج بنجاح!</strong> &nbsp;📞 الهاتف: <strong>${escapeHtml(extractedPhone)}</strong>`;
         } else {
-          statusEl.style.background = 'rgba(245, 158, 11, 0.12)';
-          statusEl.style.border = '1px solid rgba(245, 158, 11, 0.3)';
-          statusEl.style.color = '#fbbf24';
-          statusEl.innerHTML = 'ℹ️ لم نتمكن من تحديد اسم العميل بدقة من الكلمات الدلالية. يمكنك كتابته يدوياً في خانة "اسم العميل" أعلاه.';
+          // Hide the status card — no need to show anything
+          statusEl.style.display = 'none';
         }
 
-        // Show one-click name chips from lines if name wasn't detected
-        if (!extractedName && normalizedLines.length > 0) {
-          const candidates = [];
-          normalizedLines.forEach(l => {
-            const clean = l.replace(/[0-9\/\-:,\.]/g, '').trim();
-            if (/^[\u0600-\u06FF\s]{4,35}$/.test(clean) && !clean.includes('أمير العفيفي') && !clean.includes('فاتورة') && !clean.includes('ضريبة') && !clean.includes('الشارقة') && !clean.includes('دبي')) {
-              const fixed = fixIfReversedArabic(clean);
-              if (fixed && !candidates.includes(fixed)) candidates.push(fixed);
-            }
-          });
-          if (candidates.length > 0) {
-            const chipsHtml = candidates.slice(0, 6).map(c => `
-              <button type="button" onclick="document.getElementById('link-name').value='${escapeHtml(c)}';this.style.background='#10b981';" style="background:rgba(0,168,255,0.18); border:1px solid rgba(0,168,255,0.4); color:#e8f4ff; border-radius:14px; padding:4px 12px; font-size:0.78rem; cursor:pointer; font-family:'Cairo',sans-serif; margin:3px;">
-                + ${escapeHtml(c)}
-              </button>
-            `).join(' ');
-            statusEl.innerHTML += `<div style="margin-top:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.1); font-size:0.8rem; color:#8db8d8;">💡 أو اختر اسم العميل بنقرة واحدة من نصوص الفاتورة: <div style="margin-top:6px; display:flex; flex-wrap:wrap;">${chipsHtml}</div></div>`;
-          }
-        }
       } catch (err) {
         console.error('PDF parsing error:', err);
-        statusEl.style.background = 'rgba(245, 158, 11, 0.1)';
-        statusEl.style.border = '1px solid rgba(245, 158, 11, 0.25)';
-        statusEl.style.color = '#fbbf24';
-        statusEl.textContent = 'ℹ️ يمكنك إدخال اسم العميل ورقم هاتفه يدوياً.';
+        // Don't show any error card — name from filename is already filled
+        statusEl.style.display = 'none';
       }
     }
 
@@ -1361,7 +1243,7 @@
       const btn = document.getElementById('generate-btn');
 
       if (!name) {
-        alert('يرجى إدخال اسم العميل (أو رفع الفاتورة ليتم استخراجه تلقائياً)');
+        alert('يرجى إدخال اسم العميل أو رفع فاتورة PDF لاستخدام اسم الملف تلقائياً');
         return;
       }
 
