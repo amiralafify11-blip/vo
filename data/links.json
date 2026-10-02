@@ -18,7 +18,7 @@
     "has_invoice": true,
     "invoice_filename": "invoice_8bb13b3d2b204e1b.pdf",
     "invoice_original_name": "مهيب هلال.pdf",
-    "is_completed": false,
+    "is_completed": true,
     "created_at": "2026-10-02T11:45:32.478Z"
   },
   {
